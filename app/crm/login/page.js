@@ -52,9 +52,9 @@ export default function LoginPage() {
       {/* ── brand panel ── */}
       <div className="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden border-r border-[var(--line)]">
         <div className="absolute inset-0 -z-10 opacity-90"
-          style={{ background: "radial-gradient(900px 500px at 20% 10%, rgba(94,230,255,0.10), transparent 60%), radial-gradient(700px 500px at 90% 90%, rgba(124,108,255,0.12), transparent 60%)" }} />
+          style={{ background: "radial-gradient(900px 500px at 20% 10%, rgba(11,182,212,0.10), transparent 60%), radial-gradient(700px 500px at 90% 90%, rgba(91,70,232,0.12), transparent 60%)" }} />
         <Link href="/" className="flex items-center gap-3">
-          <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--signal)] to-[var(--signal-2)] text-[#04121a] font-bold text-lg">J</span>
+          <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--signal)] to-[var(--signal-2)] text-white font-bold text-lg">J</span>
           <span className="display text-xl tracking-tight">JETRO<span className="text-signal"> CRM</span></span>
         </Link>
         <div>
@@ -80,7 +80,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--signal)] to-[var(--signal-2)] text-[#04121a] font-bold text-lg">J</span>
+            <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--signal)] to-[var(--signal-2)] text-white font-bold text-lg">J</span>
             <span className="display text-xl tracking-tight">JETRO<span className="text-signal"> CRM</span></span>
           </div>
 

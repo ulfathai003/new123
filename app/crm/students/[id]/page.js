@@ -69,7 +69,7 @@ export default function StudentDetail() {
               return (
                 <li key={stage} className="flex items-start gap-3 pb-3 last:pb-0">
                   <div className="flex flex-col items-center">
-                    <span className={`grid place-items-center w-5 h-5 rounded-full text-[10px] ${done ? "bg-signal text-[#04121a]" : current ? "bg-[var(--signal-2)] text-white" : "bg-[var(--surface-3)] text-mist"}`}>
+                    <span className={`grid place-items-center w-5 h-5 rounded-full text-[10px] ${done ? "bg-signal text-white" : current ? "bg-[var(--signal-2)] text-white" : "bg-[var(--surface-3)] text-mist"}`}>
                       {done ? "✓" : i + 1}
                     </span>
                     {i < ADMISSION_STAGES.length - 1 && <span className={`w-px h-5 ${done ? "bg-signal" : "bg-[var(--line)]"}`} />}

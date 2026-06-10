@@ -73,7 +73,7 @@ export default function CrmChrome({ children }) {
           w-[252px] ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         <div className="flex items-center gap-2.5 h-16 px-5 border-b border-[var(--line)]">
-          <span className="grid place-items-center w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--signal)] to-[var(--signal-2)] text-[#04121a] font-bold">
+          <span className="grid place-items-center w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--signal)] to-[var(--signal-2)] text-white font-bold">
             J
           </span>
           {!collapsed && (
