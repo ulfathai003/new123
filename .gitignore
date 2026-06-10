@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# nested clone — separate repo, never commit here
+/future-learn-suite/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

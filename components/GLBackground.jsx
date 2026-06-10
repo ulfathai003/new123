@@ -2,19 +2,22 @@
 
 import { Canvas, useFrame, useThree, createPortal } from "@react-three/fiber";
 import { useFBO } from "@react-three/drei";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import pointerState from "../lib/pointerState";
 import scrollState from "../lib/scrollState";
 
+const PAPER = "#f3f1ec";
+
 /* ════════════════════════════════════════════════════════════
    1 · WATER SIM — height/velocity field, ping-pong FBOs.
-   The cursor "splats" energy in; a wave equation propagates it.
+   The cursor splats energy in; a wave equation propagates it.
+   This is the ONLY pointer effect — no particle repulsion.
    ════════════════════════════════════════════════════════════ */
 const simShader = /* glsl */ `
   uniform sampler2D uPrev;
   uniform vec2 uMouse;
-  uniform float uSplat;      // strength from pointer speed
+  uniform float uSplat;
   uniform vec2 uTexel;
   varying vec2 vUv;
 
@@ -27,10 +30,9 @@ const simShader = /* glsl */ `
     float t = texture2D(uPrev, vUv + vec2(0.0, uTexel.y)).r;
 
     float vel = d.g + (l + r + b + t) * 0.25 - d.r;
-    vel *= 0.986;                      // damping — long, liquid decay
+    vel *= 0.986;
     float h = (d.r + vel) * 0.998;
 
-    // pointer splat — gaussian drop where the cursor moves
     float dist = distance(vUv, uMouse);
     h += uSplat * exp(-dist * dist * 900.0);
 
@@ -47,8 +49,9 @@ const quadVert = /* glsl */ `
 `;
 
 /* ════════════════════════════════════════════════════════════
-   2 · COMPOSITE — refract the particle scene through the water,
-   add a specular glint along wave crests. Renders to screen.
+   2 · COMPOSITE — refract the scene through the water wake.
+   On paper, troughs pick up a faint tint and crests darken —
+   like ripples on shallow water over white stone.
    ════════════════════════════════════════════════════════════ */
 const compositeShader = /* glsl */ `
   uniform sampler2D uScene;
@@ -63,89 +66,97 @@ const compositeShader = /* glsl */ `
              - texture2D(uWater, vUv - vec2(0.0, 0.004)).r;
     vec2 grad = vec2(hx, hy);
 
-    // liquid refraction of everything behind the cursor's wake
     vec3 col = texture2D(uScene, vUv + grad * 0.55).rgb;
 
-    // crest glint — a faint, theme-tinted shimmer
-    float spec = pow(max(0.0, hx * 2.2 + hy * 1.2), 2.0) * 4.0;
-    col += uTint * spec;
+    float crest = pow(max(0.0, hx * 2.2 + hy * 1.2), 2.0);
+    float trough = pow(max(0.0, -(hx * 2.2 + hy * 1.2)), 2.0);
+    col = mix(col, uTint, clamp(trough * 1.6, 0.0, 0.4));
+    col -= crest * 0.18;
 
     gl_FragColor = vec4(col, 1.0);
   }
 `;
 
 /* ════════════════════════════════════════════════════════════
-   3 · PARTICLES — a drifting intelligence field. Curl-ish motion
-   in the vertex stage, soft additive sprites, mouse repulsion.
+   3 · ALPS SPLAT — the photoreal centrepiece (home only).
+   A Luma gaussian splat of the Schwyz Alps, foreground-masked
+   so the peaks float on paper, scroll-orbited like igloo.inc.
+   ════════════════════════════════════════════════════════════ */
+const ALPS_URL = "https://lumalabs.ai/capture/4da7cf32-865a-4515-8cb9-9dfc574c90c2";
+
+function AlpsSplat() {
+  const groupRef = useRef();
+  const [splat, setSplat] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    let instance = null;
+    // dynamic import: luma-web touches WebGL internals, keep it client-only
+    import("@lumaai/luma-web").then(({ LumaSplatsThree, LumaSplatsSemantics }) => {
+      if (!live) return;
+      instance = new LumaSplatsThree({
+        source: ALPS_URL,
+        particleRevealEnabled: true,
+        enableThreeShaderIntegration: true,
+      });
+      // strip the captured sky — the peaks float on the paper page
+      instance.semanticsMask = LumaSplatsSemantics.FOREGROUND;
+      setSplat(instance);
+    });
+    return () => {
+      live = false;
+      instance?.dispose?.();
+    };
+  }, []);
+
+  useFrame((state) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const p = scrollState.progress;
+    // the mountain slowly presents itself as the story scrolls
+    g.rotation.y = p * Math.PI * 0.55 + state.clock.elapsedTime * 0.012;
+    g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12 - p * 1.4;
+  });
+
+  if (!splat) return null;
+  return (
+    <group ref={groupRef} position={[0, -3.2, 4]} scale={2.6}>
+      <primitive object={splat} />
+    </group>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   4 · PARTICLES — kept ONLY for the AI Agents page, where a
+   living swarm is the point. No cursor repulsion anywhere.
    ════════════════════════════════════════════════════════════ */
 const particleVert = /* glsl */ `
   uniform float uTime;
-  uniform float uProgress;   // scroll 0..1 — drives the scene morph
-  uniform float uMorph;      // 1 = full scene journey (home), 0 = calm nebula
-  uniform float uEnergy;     // per-route mood
-  uniform vec2 uMouseWorld;
+  uniform float uEnergy;
   uniform float uPixelRatio;
-  attribute vec4 aSeed;      // xyz = scattered seed, w = random
+  attribute vec4 aSeed;
   varying float vMix;
   varying float vFade;
-  varying float vGlow;
 
   void main() {
     vec3 seed = aSeed.xyz;
     float rnd = aSeed.w;
-    float r = length(seed);
-    vec3 dir = seed / max(r, 0.001);
 
-    /* ── ten-scene formation atlas ──
-       the cloud of raw data condenses into intelligence, structures
-       into a network, ignites into a core, scatters into civilisation,
-       streams down the transformation highway, then launches outward. */
-    vec3 cloud  = seed;                                   // 1 · the void of data
-    vec3 birth  = dir * (2.0 + rnd * 2.4);                // 2 · convergence
-    vec3 lattice = floor(seed / 3.1) * 3.1                // 3 · neural network
-                 + vec3(sin(rnd*40.0), cos(rnd*30.0), sin(rnd*22.0)) * 0.5;
-    vec3 core   = dir * (5.4 + rnd * 0.7);                // 4 · the core (shell)
-    float ga = rnd * 28.0 + r * 0.35;
-    float gr = 3.5 + rnd * 12.0;
-    vec3 galaxy = vec3(cos(ga) * gr, sin(ga) * gr * 0.42, (rnd - 0.5) * 5.0); // 5+7
-    vec3 stream = vec3(cos(rnd * 6.2831) * (1.4 + rnd * 2.2),
-                       sin(rnd * 6.2831) * (1.4 + rnd * 2.2),
-                       (rnd - 0.5) * 72.0);               // 6 · highway
-    vec3 wide   = vec3(cos(ga) * gr * 1.7, sin(ga) * gr * 1.7 * 0.5, (rnd - 0.5) * 9.0); // 8/9
-    vec3 launch = dir * (12.0 + rnd * 28.0);              // 10 · launch outward
-
-    // home scrubs the real journey; sub-pages park in a calm galaxy
-    float p = mix(0.56, uProgress, uMorph);
-
-    vec3 pos = cloud;
-    pos = mix(pos, birth,   smoothstep(0.04, 0.18, p));
-    pos = mix(pos, lattice, smoothstep(0.18, 0.32, p));
-    pos = mix(pos, core,    smoothstep(0.32, 0.46, p));
-    pos = mix(pos, galaxy,  smoothstep(0.46, 0.62, p));
-    pos = mix(pos, stream,  smoothstep(0.62, 0.76, p));
-    pos = mix(pos, wide,    smoothstep(0.76, 0.90, p));
-    pos = mix(pos, launch,  smoothstep(0.90, 1.0,  p));
-
-    // breathing drift — nothing is ever perfectly still
-    float t = uTime * (0.1 + rnd * 0.14) * uEnergy;
-    pos += vec3(sin(t + rnd * 6.28), cos(t * 0.8 + rnd * 12.5), sin(t * 0.6 + rnd * 3.14))
-         * (0.45 + rnd * 0.55);
-
-    // pointer repulsion — particles part around the cursor like water
-    vec2 toMouse = pos.xy - uMouseWorld;
-    float md = length(toMouse);
-    pos.xy += normalize(toMouse + 0.0001) * smoothstep(4.5, 0.0, md) * 2.4;
+    // calm orbital galaxy — the agent fleet at work
+    float ga = rnd * 28.0 + uTime * (0.02 + rnd * 0.05) * uEnergy;
+    float gr = 3.0 + rnd * 11.0;
+    vec3 pos = vec3(cos(ga) * gr, sin(ga) * gr * 0.45, (rnd - 0.5) * 6.0 - 4.0);
+    pos += vec3(sin(uTime * 0.4 + rnd * 6.28), cos(uTime * 0.3 + rnd * 12.5), 0.0)
+         * (0.3 + rnd * 0.4);
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    float size = (0.9 + rnd * 2.4) * (34.0 / -mv.z);
+    float size = (0.9 + rnd * 2.2) * (30.0 / -mv.z);
     gl_PointSize = size * uPixelRatio * (1.0 + sin(uTime * (0.5 + rnd) + rnd * 40.0) * 0.3);
 
     vMix = rnd;
-    vFade = smoothstep(-40.0, -4.0, mv.z);
-    // intelligence ignites: a warm surge through the core scene
-    vGlow = smoothstep(0.32, 0.46, p) * (1.0 - smoothstep(0.46, 0.60, p));
+    vFade = smoothstep(-34.0, -4.0, mv.z);
   }
 `;
 
@@ -154,28 +165,25 @@ const particleFrag = /* glsl */ `
   uniform vec3 uColorB;
   varying float vMix;
   varying float vFade;
-  varying float vGlow;
 
   void main() {
     float d = length(gl_PointCoord - 0.5);
     float core = smoothstep(0.5, 0.04, d);
     vec3 col = mix(uColorA, uColorB, vMix);
-    // the core scene ignites particles into warm white intelligence
-    col = mix(col, vec3(1.0, 0.82, 0.52), vGlow * 0.75);
-    gl_FragColor = vec4(col, core * (0.5 + vMix * 0.5) * vFade);
+    col = mix(col, col * 0.35, 0.55); // ink-bodied so they read on paper
+    gl_FragColor = vec4(col, core * (0.32 + vMix * 0.32) * vFade);
   }
 `;
 
 function Particles({ theme, count }) {
   const matRef = useRef();
-  const { viewport } = useThree();
 
   const seeds = useMemo(() => {
     const arr = new Float32Array(count * 4);
     for (let i = 0; i < count; i++) {
-      arr[i * 4] = (Math.random() - 0.5) * 44;
-      arr[i * 4 + 1] = (Math.random() - 0.5) * 26;
-      arr[i * 4 + 2] = -Math.random() * 22;
+      arr[i * 4] = (Math.random() - 0.5) * 40;
+      arr[i * 4 + 1] = (Math.random() - 0.5) * 24;
+      arr[i * 4 + 2] = -Math.random() * 20;
       arr[i * 4 + 3] = Math.random();
     }
     return arr;
@@ -184,13 +192,10 @@ function Particles({ theme, count }) {
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uProgress: { value: 0 },
-      uMorph: { value: 1 },
       uEnergy: { value: 1 },
-      uMouseWorld: { value: new THREE.Vector2(0, 0) },
       uPixelRatio: { value: 1 },
-      uColorA: { value: new THREE.Color("#5ee6ff") },
-      uColorB: { value: new THREE.Color("#7c6cff") },
+      uColorA: { value: new THREE.Color("#5b46e8") },
+      uColorB: { value: new THREE.Color("#0bb6d4") },
     }),
     []
   );
@@ -199,19 +204,10 @@ function Particles({ theme, count }) {
     const u = matRef.current?.uniforms;
     if (!u) return;
     u.uTime.value = state.clock.elapsedTime;
-    // ease progress so the morph never snaps even on fast scroll
-    u.uProgress.value += (scrollState.progress - u.uProgress.value) * 0.08;
     u.uPixelRatio.value = state.gl.getPixelRatio();
-    // ease theme colors / morph so route changes feel like weather, not a cut
     u.uColorA.value.lerp(theme.current.a, 0.04);
     u.uColorB.value.lerp(theme.current.b, 0.04);
     u.uEnergy.value += (theme.current.energy - u.uEnergy.value) * 0.04;
-    u.uMorph.value += ((theme.current.morph ?? 1) - u.uMorph.value) * 0.05;
-    // pointer 0..1 → world units on the z=0 plane
-    u.uMouseWorld.value.set(
-      (pointerState.x - 0.5) * viewport.width,
-      (pointerState.y - 0.5) * viewport.height
-    );
   });
 
   return (
@@ -227,19 +223,19 @@ function Particles({ theme, count }) {
         uniforms={uniforms}
         transparent
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
+        blending={THREE.NormalBlending}
       />
     </points>
   );
 }
 
 /* ════════════════════════════════════════════════════════════
-   4 · PIPELINE — particles → FBO, water sim → ping-pong,
+   5 · PIPELINE — content → FBO, water sim → ping-pong,
    composite → screen. One orchestrator owns the render loop.
    ════════════════════════════════════════════════════════════ */
 const SIM_SIZE = 288;
 
-function Pipeline({ theme, count }) {
+function Pipeline({ theme, mode, count }) {
   const { gl, camera, size } = useThree();
 
   const sceneFBO = useFBO(size.width, size.height, { samples: 0 });
@@ -247,9 +243,11 @@ function Pipeline({ theme, count }) {
   const simB = useFBO(SIM_SIZE, SIM_SIZE, { type: THREE.HalfFloatType, depth: false });
   const flip = useRef(false);
 
-  const particleScene = useMemo(() => {
+  const contentScene = useMemo(() => {
     const s = new THREE.Scene();
-    s.background = new THREE.Color("#060606");
+    s.background = new THREE.Color(PAPER);
+    // distant geometry dissolves into the page — igloo-style float
+    s.fog = new THREE.FogExp2(PAPER, 0.055);
     return s;
   }, []);
 
@@ -276,7 +274,7 @@ function Pipeline({ theme, count }) {
       uniforms: {
         uScene: { value: null },
         uWater: { value: null },
-        uTint: { value: new THREE.Color("#5ee6ff") },
+        uTint: { value: new THREE.Color("#5b46e8") },
       },
     });
     const scene = new THREE.Scene();
@@ -285,15 +283,18 @@ function Pipeline({ theme, count }) {
   }, []);
 
   useFrame(() => {
-    // 0 · depth parallax — the camera leans toward the cursor, so the
-    // particle field's z-layers slide over each other like a diorama
-    const px = (pointerState.x - 0.5) * 2.4;
-    const py = (pointerState.y - 0.5) * 1.6;
-    camera.position.x += (px - camera.position.x) * 0.045;
-    camera.position.y += (py - camera.position.y) * 0.045;
-    camera.lookAt(0, 0, -10);
+    // gentle depth parallax — the camera leans with the cursor,
+    // sliding the 3D content against the page like a diorama
+    const px = (pointerState.x - 0.5) * 1.6;
+    const py = (pointerState.y - 0.5) * 1.0;
+    camera.position.x += (px - camera.position.x) * 0.04;
+    camera.position.y += (py - camera.position.y) * 0.04;
+    // home dollies toward the peaks as the journey progresses
+    const targetZ = mode === "splat" ? 16 - scrollState.progress * 5 : 16;
+    camera.position.z += (targetZ - camera.position.z) * 0.04;
+    camera.lookAt(0, 0, -6);
 
-    // 1 · water step (splat strength follows pointer speed, clicks slam)
+    // water step — splat strength follows pointer speed, clicks slam
     const splat =
       Math.min(pointerState.speed * 0.0016, 0.22) + (pointerState.clicks > 0 ? 0.5 : 0);
     pointerState.clicks = 0;
@@ -306,11 +307,11 @@ function Pipeline({ theme, count }) {
     gl.render(simScene, simCam);
     flip.current = !flip.current;
 
-    // 2 · particles into the scene buffer
+    // content into the scene buffer
     gl.setRenderTarget(sceneFBO);
-    gl.render(particleScene, camera);
+    gl.render(contentScene, camera);
 
-    // 3 · composite to screen, refracted through the water
+    // composite to screen through the water
     outMat.uniforms.uScene.value = sceneFBO.texture;
     outMat.uniforms.uWater.value = next.texture;
     outMat.uniforms.uTint.value.lerp(theme.current.a, 0.04);
@@ -318,25 +319,30 @@ function Pipeline({ theme, count }) {
     gl.render(outScene, simCam);
   }, 1);
 
-  return createPortal(<Particles theme={theme} count={count} />, particleScene);
+  return createPortal(
+    <>
+      {mode === "splat" && <AlpsSplat />}
+      {mode === "particles" && <Particles theme={theme} count={count} />}
+    </>,
+    contentScene
+  );
 }
 
 /* ─── Root ─── */
-export default function GLBackground({ theme, reducedMotion = false }) {
+export default function GLBackground({ theme, mode = "calm", reducedMotion = false }) {
   const count = useMemo(() => {
-    if (typeof window === "undefined") return 14000;
-    return window.innerWidth < 768 ? 4000 : 14000;
+    if (typeof window === "undefined") return 3500;
+    return window.innerWidth < 768 ? 1500 : 3500;
   }, []);
 
   if (reducedMotion) {
-    // calm gradient, zero GPU churn
     return (
       <div
         className="fixed inset-0 z-0"
         aria-hidden="true"
         style={{
           background:
-            "radial-gradient(60% 50% at 50% 40%, #0b1016 0%, #060606 70%)",
+            "radial-gradient(70% 60% at 50% 35%, #ffffff 0%, #f3f1ec 60%, #e9e6df 100%)",
         }}
       />
     );
@@ -346,10 +352,10 @@ export default function GLBackground({ theme, reducedMotion = false }) {
     <div className="fixed inset-0 z-0" aria-hidden="true">
       <Canvas
         dpr={[1, 1.6]}
-        camera={{ fov: 50, near: 0.1, far: 120, position: [0, 0, 16] }}
-        gl={{ antialias: false, powerPreference: "high-performance" }}
+        camera={{ fov: 50, near: 0.1, far: 200, position: [0, 0, 16] }}
+        gl={{ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true }}
       >
-        <Pipeline theme={theme} count={count} />
+        <Pipeline theme={theme} mode={mode} count={count} />
       </Canvas>
     </div>
   );

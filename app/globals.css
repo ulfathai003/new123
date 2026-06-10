@@ -147,6 +147,26 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 15%, transparent);
 }
 
+/* ─── home: feature chapter links (anime.js-style arrow rows) ─── */
+.feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.feature-link .feature-arrow {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.feature-link:hover .feature-arrow {
+  transform: translateX(5px);
+}
+
+/* ─── home: floating ops console card ─── */
+.ops-card {
+  border-left: 2px solid var(--accent, var(--signal));
+  white-space: pre;
+}
+
 /* ─── FAQ accordions ─── */
 .faq-item {
   border-bottom: 1px solid var(--line);

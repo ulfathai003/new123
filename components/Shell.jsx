@@ -21,6 +21,10 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 export default function Shell({ children }) {
   const pathname = usePathname();
   const [reduced, setReduced] = useState(false);
+  // what lives behind each page: photoreal alps on home,
+  // the agent swarm on /ai-agents, clean paper everywhere else
+  const glMode =
+    pathname === "/" ? "splat" : pathname.startsWith("/ai-agents") ? "particles" : "calm";
   const curtainRef = useRef(null);
   const lenisRef = useRef(null);
   // GL reads this every frame; route changes just retarget the lerp
@@ -171,7 +175,7 @@ export default function Shell({ children }) {
 
   return (
     <>
-      <GLBackground theme={themeRef} reducedMotion={reduced} />
+      <GLBackground theme={themeRef} mode={glMode} reducedMotion={reduced} />
       <Cursor />
       <Nav />
       <div className="relative z-10">{children}</div>

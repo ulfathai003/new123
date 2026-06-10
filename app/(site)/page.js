@@ -1,187 +1,216 @@
 import Link from "next/link";
-import { SERVICES, HOME_FAQS, AGENTS_SHOWCASE } from "@/lib/data";
-import HomeFX from "@/components/fx/HomeFX";
-import MagneticButton from "@/components/MagneticButton";
-import Faq from "@/components/Faq";
+import { SERVICES, HOME_FAQS, SITE } from "../../lib/data";
+import HomeFX from "../../components/fx/HomeFX";
+import AnimeDemo from "../../components/AnimeDemo";
+import MagneticButton from "../../components/MagneticButton";
+import Faq from "../../components/Faq";
 
 export const metadata = {
   title: "SoftiIntel — AI-Native Creative Technology Agency | AI Agents, CRM, Web & Automation",
   description:
-    "SoftiIntel builds AI agents, custom CRMs, immersive websites, mobile apps and automation for ambitious businesses. A horizontal journey through what intelligence can do for you.",
+    "SoftiIntel is the all-in-one intelligence engine for ambitious businesses: AI agents, custom CRMs, immersive websites, mobile apps and WhatsApp automation — one team, one API for your whole operation.",
   alternates: { canonical: "/" },
 };
 
-const STATS = [
-  [120, "+", "systems shipped"],
-  [38000, "+", "hours automated / yr"],
-  [11, "", "days avg. automation payback"],
-  [97, "%", "client retention"],
+/* chapter-synced code cards (the floating sub-nav, anime.js style) */
+const OPS_SNIPPETS = {
+  "ai-agents": `agent.watch(inbox)\n  .qualify(lead)\n  .book(meeting);`,
+  "crm-development": `crm.pipeline(\n  'enquiry → quote → close'\n).automate(followUps);`,
+  "web-development": `site.render(<Story />);\nsite.audit({\n  lighthouse: 98,\n});`,
+  "mobile-apps": `app.notify(customer,\n  'Your slot is ready'\n).rebook(noShows);`,
+  "automation": `on(order.created)\n  .send(whatsapp.update)\n  .recover(abandoned);`,
+  "ai-integrations": `docs.extract(invoice)\n  .validate()\n  .post(ledger);`,
+  "custom-software": `replace(spreadsheets * 7)\n  .with(onePlatform);`,
+  "digital-transformation": `audit(business)\n  .roadmap()\n  .ship({ cadence: 'weekly' });`,
+};
+
+const TOOLBOX_CHIPS = [
+  "AI Agents", "Custom CRM", "WebGL Stories", "WhatsApp Flows",
+  "Mobile Apps", "Document AI", "Ops Platforms", "SEO Engines",
+  "Lead Scoring", "Auto Follow-ups", "Owner Dashboards", "Booking Systems",
+];
+
+const LEVERAGE = [
+  ["Customer replies", 38, "#5b46e8"],
+  ["Follow-ups", 22, "#0bb6d4"],
+  ["Reporting", 16, "#e8a23d"],
+  ["Data entry", 14, "#34b87c"],
+  ["Scheduling", 10, "#d4569e"],
 ];
 
 export default function Home() {
   return (
     <main>
-      {/* ════ THE HORIZONTAL JOURNEY ════ */}
-      <section id="journey" aria-label="SoftiIntel story">
-        <div id="journey-track" className="htrack">
-
-          {/* 00 · ARRIVAL */}
-          <div className="hpanel px-6 md:px-[8vw]">
-            <div className="max-w-5xl">
-              <p className="mono-label mb-6 h-reveal" data-px="0.55">
-                softiintel — ai-native creative technology agency
-              </p>
-              <h1 className="display text-[12vw] md:text-[7vw]" data-split data-px="0.3">
-                We design intelligence you can feel.
-              </h1>
-              <p className="mt-8 max-w-xl text-mist text-base md:text-lg font-light leading-relaxed h-reveal" data-px="0.45">
-                AI agents, custom CRMs, immersive websites and automation —
-                engineered by a studio that treats every build like a story
-                worth telling sideways.
-              </p>
-              <div className="mt-10 flex items-center gap-6 h-reveal" data-px="0.6">
-                <MagneticButton href="/contact" className="cta">
-                  <span className="dot" />
-                  Begin the build
-                </MagneticButton>
-                <p className="mono-label hidden md:block">scroll → the story moves sideways</p>
-              </div>
-            </div>
-            <div className="absolute bottom-8 left-6 md:left-[8vw] mono-label !text-snow/40 h-reveal" data-px="0.8">
-              00 / arrival
-            </div>
+      {/* ════ INTRO — the engine headline over the peaks ════ */}
+      <section id="intro" data-chapter="intro" className="relative min-h-screen flex items-center px-6 md:px-10">
+        <div className="max-w-6xl mx-auto w-full" data-depth="0.25">
+          <h1 className="display text-[15vw] md:text-[7.2rem] leading-[0.98]" data-split>
+            All-in-one intelligence engine
+          </h1>
+          <span className="sr-only">— SoftiIntel, the AI-native creative technology agency</span>
+          <p className="mt-8 max-w-md text-mist text-lg font-light leading-relaxed reveal">
+            A fast and tireless team to automate{" "}
+            <em className="not-italic text-snow border-b-2 border-signal">your business</em>.
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-5 reveal">
+            <pre className="mono-label !text-snow bg-void-soft border border-line rounded-full px-5 py-3.5 shadow-sm">
+              <code>{`> softiintel deploy --agents`}</code>
+            </pre>
+            <MagneticButton href="/contact" className="cta">
+              <span className="dot" />
+              Start a project
+            </MagneticButton>
           </div>
+        </div>
+        <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 reveal">
+          <p className="mono-label">scroll — the engine warms up</p>
+          <div className="w-px h-9 bg-gradient-to-b from-snow/50 to-transparent" />
+        </div>
+      </section>
 
-          {/* 01 · IDENTITY */}
-          <div className="hpanel px-6 md:px-[8vw]">
-            <div className="max-w-4xl">
-              <p className="mono-label !text-signal mb-6 h-reveal" data-px="0.55">01 / identity</p>
-              <h2 className="display text-4xl md:text-6xl mb-10 h-reveal" data-px="0.3">
-                Where creativity
-                <br />
-                <span className="text-mist">computes.</span>
-              </h2>
-              <div className="grid md:grid-cols-3 gap-6" data-px="0.12">
-                {[
-                  ["Story-first", "Every interface is a narrative. We design journeys, not pages — which is why you're reading this sideways."],
-                  ["AI-native", "Intelligence isn't a feature we bolt on. Agents, automation and models are load-bearing parts of everything we ship."],
-                  ["Built, not decked", "No 200-page strategy theatre. Working software every week, measured in hours saved and revenue moved."],
-                ].map(([t, b]) => (
-                  <div key={t} className="h-reveal border border-snow/10 rounded-[10px] p-6 bg-void/60 backdrop-blur-sm">
-                    <h3 className="display text-lg mb-3 text-snow">{t}</h3>
-                    <p className="text-mist text-sm font-light leading-relaxed">{b}</p>
-                  </div>
-                ))}
+      {/* ════ TOOLBOX — everything, one team ════ */}
+      <section id="toolbox" data-chapter="toolbox" className="relative px-6 md:px-10 py-36 md:py-48 text-center overflow-clip">
+        <div className="max-w-3xl mx-auto relative z-10">
+          <h2 className="display text-4xl md:text-6xl" data-split>
+            The complete operator&rsquo;s toolbox
+          </h2>
+          <p className="mt-6 text-mist font-light leading-relaxed max-w-xl mx-auto reveal">
+            Break free from manual operations. Automate anything in your
+            business with a single team and a single point of contact.
+          </p>
+        </div>
+        <div className="toolbox-cloud mt-16 max-w-4xl mx-auto flex flex-wrap justify-center gap-3" aria-hidden="true">
+          {TOOLBOX_CHIPS.map((chip) => (
+            <span key={chip} className="toolbox-chip mono-label !text-snow/70 border border-line bg-void-soft/80 rounded-full px-4 py-2">
+              {chip}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* ════ FEATURE CHAPTERS — one per discipline, live demos ════ */}
+      <section id="features" aria-label="Services">
+        {SERVICES.map((s, i) => (
+          <section
+            key={s.slug}
+            id={`ch-${s.slug}`}
+            data-chapter={s.slug}
+            className="feature-sec relative px-6 md:px-10 py-24 md:py-36"
+            style={{ "--accent": s.accent }}
+          >
+            <div className={`max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center ${i % 2 ? "md:[direction:rtl]" : ""}`}>
+              <div className="[direction:ltr]">
+                <p className="mono-label mb-4 reveal">
+                  <span style={{ color: s.accent }}>{String(i + 1).padStart(2, "0")}</span> / {s.slug.replace(/-/g, " ")}
+                </p>
+                <h2 className="display text-3xl md:text-5xl mb-5" data-split>
+                  {s.hero}
+                </h2>
+                <p className="text-mist font-light leading-relaxed mb-8 max-w-md reveal">{s.short}</p>
+                <ul className="reveal flex flex-col gap-3.5">
+                  {s.deliverables.slice(0, 3).map((d) => (
+                    <li key={d}>
+                      <Link href={`/services/${s.slug}`} className="feature-link group text-sm font-light text-snow/85 hover:text-snow">
+                        <span className="feature-arrow" style={{ color: s.accent }} aria-hidden="true">→</span>
+                        {d}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="[direction:ltr] reveal" data-speed="0.08">
+                <AnimeDemo type={s.slug} accent={s.accent} />
               </div>
             </div>
+          </section>
+        ))}
+      </section>
+
+      {/* ════ LEVERAGE — where the hours go back (modules chart) ════ */}
+      <section id="leverage" data-chapter="leverage" className="relative px-6 md:px-10 py-36 md:py-48">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 className="display text-4xl md:text-6xl" data-split>
+              A lightweight, modular engagement
+            </h2>
+            <p className="mt-6 text-mist font-light leading-relaxed max-w-md reveal">
+              Start with the one workflow that bleeds the most hours.
+              Add modules only when the previous one has paid for itself.
+            </p>
           </div>
-
-          {/* 02 · CAPABILITIES */}
-          <div className="hpanel px-6 md:px-[6vw]">
-            <div className="w-full max-w-6xl">
-              <p className="mono-label !text-signal mb-6 h-reveal" data-px="0.55">02 / capabilities</p>
-              <h2 className="display text-4xl md:text-6xl mb-12 h-reveal" data-px="0.3">
-                Eight ways in.
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" data-px="0.12">
-                {SERVICES.map((s, i) => (
-                  <Link
-                    key={s.slug}
-                    href={`/services/${s.slug}`}
-                    className="svc-card h-reveal group border border-snow/10 rounded-[10px] p-5 bg-void/60 backdrop-blur-sm transition-colors hover:border-snow/30"
-                    style={{ "--accent": s.accent }}
-                  >
-                    <span className="mono-label !text-snow/40">{String(i + 1).padStart(2, "0")}</span>
-                    <h3 className="display text-lg md:text-xl mt-6 mb-2 text-snow group-hover:text-[var(--accent)] transition-colors">
-                      {s.title}
-                    </h3>
-                    <p className="text-mist text-xs font-light leading-relaxed">{s.short}</p>
-                  </Link>
-                ))}
-              </div>
+          <div className="reveal border border-line rounded-[10px] bg-void-soft p-7 shadow-sm">
+            <div className="flex items-baseline justify-between mb-5">
+              <h3 className="display text-lg">Hours reclaimed</h3>
+              <p className="mono-label !text-snow"><span data-count="160" data-suffix="+">0</span> hrs / mo</p>
             </div>
-          </div>
-
-          {/* 03 · THE AGENTS */}
-          <div className="hpanel px-6 md:px-[8vw]">
-            <div className="max-w-5xl">
-              <p className="mono-label !text-signal mb-6 h-reveal" data-px="0.55">03 / the agents</p>
-              <h2 className="display text-4xl md:text-6xl mb-4 h-reveal" data-px="0.3">
-                Meet the workforce
-                <br />
-                <span className="text-mist">that never clocks out.</span>
-              </h2>
-              <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4" data-px="0.12">
-                {AGENTS_SHOWCASE.map((a) => (
-                  <div key={a.name} className="h-reveal border border-snow/10 rounded-[10px] p-5 bg-void/60 backdrop-blur-sm">
-                    <div className="w-2 h-2 rounded-full bg-signal mb-4 agent-pulse" />
-                    <h3 className="display text-lg text-snow">{a.name}</h3>
-                    <p className="mono-label !text-snow/50 mt-1 mb-3">{a.role}</p>
-                    <p className="text-mist text-xs font-light leading-relaxed">{a.desc}</p>
-                  </div>
-                ))}
-              </div>
-              <Link href="/ai-agents" className="draw-link mono-label !text-signal inline-block mt-10 h-reveal" data-px="0.5">
-                inspect the agent fleet →
-              </Link>
+            <div className="leverage-chart flex h-3 rounded-full overflow-clip mb-6" aria-hidden="true">
+              {LEVERAGE.map(([label, size, color]) => (
+                <div key={label} className="lev-bar h-full" data-size={size} style={{ background: color, width: 0 }} />
+              ))}
             </div>
-          </div>
-
-          {/* 04 · PROOF */}
-          <div className="hpanel px-6 md:px-[8vw]">
-            <div className="max-w-5xl w-full">
-              <p className="mono-label !text-signal mb-6 h-reveal" data-px="0.55">04 / proof</p>
-              <h2 className="display text-4xl md:text-6xl mb-14 h-reveal" data-px="0.3">
-                Numbers, not adjectives.
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8" data-px="0.12">
-                {STATS.map(([n, suffix, label]) => (
-                  <div key={label} className="h-reveal">
-                    <p className="display text-5xl md:text-6xl text-snow tabular-nums">
-                      <span data-hcount={n} data-suffix={suffix}>0</span>
-                    </p>
-                    <p className="mono-label mt-3">{label}</p>
-                  </div>
-                ))}
-              </div>
-              <Link href="/work" className="draw-link mono-label !text-signal inline-block mt-14 h-reveal" data-px="0.5">
-                see the case studies →
-              </Link>
-            </div>
-          </div>
-
-          {/* 05 · INVITATION */}
-          <div className="hpanel px-6 md:px-[8vw]">
-            <div className="max-w-4xl text-center mx-auto" data-px="0.25">
-              <p className="mono-label mb-8 h-reveal">05 / your move</p>
-              <h2 className="display text-[10vw] md:text-[5.5vw] h-reveal">
-                The future belongs to businesses
-                <span className="text-mist"> that automate the boring parts.</span>
-              </h2>
-              <div className="mt-12 flex justify-center h-reveal">
-                <MagneticButton href="/contact" className="cta" burstColor="#7c6cff">
-                  <span className="dot" />
-                  Start your transformation
-                </MagneticButton>
-              </div>
-            </div>
+            <ul className="flex flex-col gap-2.5">
+              {LEVERAGE.map(([label, size, color]) => (
+                <li key={label} className="flex items-center gap-3 text-sm font-light text-snow/85">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                  {label}
+                  <span className="ml-auto mono-label !text-snow/50">{size}%</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* journey progress rail (desktop) */}
-      <div
-        id="journey-rail"
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 hidden md:block w-44 h-px bg-snow/15"
-        aria-hidden="true"
-      >
-        <div id="journey-rail-fill" className="h-full w-full bg-signal origin-left scale-x-0" />
-      </div>
+      {/* ════ GET STARTED — the launch grid ════ */}
+      <section id="get-started" data-chapter="get-started" className="relative px-6 md:px-10 py-36 text-center">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="display text-5xl md:text-7xl" data-split>
+            Start automating
+          </h2>
+          <p className="mt-5 text-mist font-light reveal">
+            Pick the door closest to your bottleneck.
+          </p>
+          <ul className="reveal mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 text-left">
+            {[...SERVICES.map((s) => [s.title, `/services/${s.slug}`, s.accent]),
+              ["About us", "/about", "#5b46e8"],
+              ["Our work", "/work", "#0bb6d4"],
+              ["The fleet", "/ai-agents", "#d4569e"],
+              ["Contact", "/contact", "#34b87c"],
+            ].map(([label, href, color]) => (
+              <li key={href + label}>
+                <Link href={href} className="start-link group flex items-center gap-3 border border-line rounded-[10px] bg-void-soft/80 px-4 py-3.5 text-sm font-light text-snow/85 hover:text-snow hover:border-snow/35 transition-colors">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                  {label}
+                  <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color }} aria-hidden="true">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
-      {/* ════ VERTICAL CODA: FAQ for SEO depth ════ */}
       <Faq items={HOME_FAQS} title="SoftiIntel, explained." />
 
-      <HomeFX />
+      {/* ════ SUB-NAV — floating ops console synced to the chapter ════ */}
+      <aside id="subnav" className="fixed right-6 bottom-6 z-30 hidden lg:flex items-end gap-3" aria-hidden="true">
+        <div className="flex flex-col gap-0 w-56">
+          {Object.entries(OPS_SNIPPETS).map(([slug, code]) => (
+            <pre
+              key={slug}
+              data-card={slug}
+              className="ops-card hidden border border-line rounded-[10px] bg-void-soft/95 backdrop-blur-sm p-4 text-[11px] leading-relaxed font-mono text-snow/80 shadow-lg"
+              style={{ "--accent": SERVICES.find((s) => s.slug === slug)?.accent }}
+            >
+              <code>{code}</code>
+            </pre>
+          ))}
+        </div>
+        <div className="scroll-rail w-px h-28 bg-line relative">
+          <div id="scroll-rail-cursor" className="absolute left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full bg-signal" style={{ top: 0 }} />
+        </div>
+      </aside>
+
+      <HomeFX snippets={Object.keys(OPS_SNIPPETS)} />
     </main>
   );
 }

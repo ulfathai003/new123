@@ -43,7 +43,7 @@ export default function Nav() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 mix-blend-difference">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5">
         <Link href="/" className="flex items-baseline gap-3" data-magnetic>
           <span className="display text-lg tracking-tight">
             SOFTI<span className="text-signal">INTEL</span>

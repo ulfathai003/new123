@@ -3,141 +3,108 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { animate, stagger } from "animejs";
 
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Home choreography: vertical scroll drives a horizontal journey.
- * Desktop pins the track and scrubs it sideways; every panel's
- * content is revealed by its position on the track (containerAnimation),
- * not the viewport. Mobile gets an honest vertical flow.
+ * Home choreography, anime.js-homepage style:
+ * - chapter tracking swaps the floating ops-console card
+ * - a scroll rail cursor rides the page progress
+ * - toolbox chips float on their own gentle loops
+ * - the leverage chart bars grow when the chapter arrives
+ * (Headline splits, reveals, counters and parallax come from the
+ *  Shell's shared grammar — this file only adds the home-specific acts.)
  */
-export default function HomeFX() {
+export default function HomeFX({ snippets = [] }) {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set(".h-reveal", { opacity: 1, y: 0 });
+      gsap.set(".lev-bar", { width: (i, el) => el.dataset.size + "%" });
       return;
     }
 
-    const mm = gsap.matchMedia();
-
-    mm.add("(min-width: 768px)", () => {
-      const track = document.getElementById("journey-track");
-      const distance = () => track.scrollWidth - window.innerWidth;
-
-      const drive = gsap.to(track, {
-        x: () => -distance(),
-        ease: "none",
-        scrollTrigger: {
-          trigger: "#journey",
-          start: "top top",
-          end: () => "+=" + distance(),
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            gsap.set("#journey-rail-fill", { scaleX: self.progress });
+    const ctx = gsap.context(() => {
+      /* ── floating ops console: one card per chapter ── */
+      let activeCard = null;
+      const showCard = (slug) => {
+        if (activeCard === slug) return;
+        activeCard = slug;
+        document.querySelectorAll(".ops-card").forEach((el) => {
+          const match = el.dataset.card === slug;
+          if (match && el.classList.contains("hidden")) {
+            el.classList.remove("hidden");
+            animate(el, {
+              translateY: [14, 0],
+              opacity: [0, 1],
+              duration: 450,
+              ease: "outExpo",
+            });
+          } else if (!match) {
+            el.classList.add("hidden");
+          }
+        });
+      };
+      snippets.forEach((slug) => {
+        ScrollTrigger.create({
+          trigger: `#ch-${slug}`,
+          start: "top 55%",
+          end: "bottom 55%",
+          onToggle: (self) => {
+            if (self.isActive) showCard(slug);
+            else if (activeCard === slug) {
+              activeCard = null;
+              document
+                .querySelector(`.ops-card[data-card="${slug}"]`)
+                ?.classList.add("hidden");
+            }
           },
+        });
+      });
+
+      /* ── scroll rail cursor ── */
+      ScrollTrigger.create({
+        trigger: document.body,
+        start: "top top",
+        end: "bottom bottom",
+        onUpdate: (self) => {
+          gsap.set("#scroll-rail-cursor", { top: `${self.progress * 100}%` });
         },
       });
 
-      // horizontal parallax — [data-px] layers drift at their own rate
-      // while their panel traverses, so every slide has visible depth
-      gsap.utils.toArray("#journey-track [data-px]").forEach((el) => {
-        const depth = parseFloat(el.dataset.px) || 0.3;
-        gsap.fromTo(
-          el,
-          { x: depth * 180 },
-          {
-            x: -depth * 180,
-            ease: "none",
-            scrollTrigger: {
-              trigger: el,
-              containerAnimation: drive,
-              start: "left right",
-              end: "right left",
-              scrub: 0.5,
-            },
-          }
-        );
-      });
-
-      // panel content surfaces as its slide enters from the right
-      gsap.utils.toArray("#journey-track .h-reveal").forEach((el) => {
-        gsap.to(el, {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: "power4.out",
-          scrollTrigger: {
-            trigger: el,
-            containerAnimation: drive,
-            start: "left 80%",
-            once: true,
-          },
-        });
-      });
-
-      // stats count up when the proof panel slides in
-      gsap.utils.toArray("[data-hcount]").forEach((el) => {
-        const target = parseFloat(el.dataset.hcount);
-        const obj = { v: 0 };
-        gsap.to(obj, {
-          v: target,
-          duration: 2,
-          ease: "power3.out",
-          scrollTrigger: { trigger: el, containerAnimation: drive, start: "left 85%", once: true },
-          onUpdate: () =>
-            (el.textContent = Math.round(obj.v).toLocaleString() + (el.dataset.suffix || "")),
-        });
-      });
-
-      // capability cards: depth tilt toward the cursor
-      const cards = gsap.utils.toArray(".svc-card");
-      const cleanups = cards.map((card) => {
-        const rx = gsap.quickTo(card, "rotationY", { duration: 0.5, ease: "power3.out" });
-        const ry = gsap.quickTo(card, "rotationX", { duration: 0.5, ease: "power3.out" });
-        gsap.set(card, { transformPerspective: 700 });
-        const move = (e) => {
-          const r = card.getBoundingClientRect();
-          rx(((e.clientX - r.left) / r.width - 0.5) * 10);
-          ry(-((e.clientY - r.top) / r.height - 0.5) * 10);
-        };
-        const leave = () => { rx(0); ry(0); };
-        card.addEventListener("pointermove", move);
-        card.addEventListener("pointerleave", leave);
-        return () => {
-          card.removeEventListener("pointermove", move);
-          card.removeEventListener("pointerleave", leave);
-        };
-      });
-
-      return () => cleanups.forEach((fn) => fn());
-    });
-
-    /* mobile: plain vertical reveals, counters on viewport entry */
-    mm.add("(max-width: 767px)", () => {
-      gsap.utils.toArray(".h-reveal").forEach((el) => {
-        gsap.to(el, {
-          opacity: 1, y: 0, duration: 1, ease: "power4.out",
-          scrollTrigger: { trigger: el, start: "top 88%", once: true },
-        });
-      });
-      gsap.utils.toArray("[data-hcount]").forEach((el) => {
-        const target = parseFloat(el.dataset.hcount);
-        const obj = { v: 0 };
-        gsap.to(obj, {
-          v: target, duration: 2, ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 88%", once: true },
-          onUpdate: () =>
-            (el.textContent = Math.round(obj.v).toLocaleString() + (el.dataset.suffix || "")),
-        });
+      /* ── leverage chart grows on arrival ── */
+      ScrollTrigger.create({
+        trigger: ".leverage-chart",
+        start: "top 85%",
+        once: true,
+        onEnter: () => {
+          gsap.to(".lev-bar", {
+            width: (i, el) => el.dataset.size + "%",
+            duration: 1.3,
+            ease: "power4.out",
+            stagger: 0.1,
+          });
+        },
       });
     });
 
-    return () => mm.revert();
-  }, []);
+    /* ── toolbox chips: each drifts on its own slow loop ── */
+    const chips = document.querySelectorAll(".toolbox-chip");
+    const chipAnim = chips.length
+      ? animate(chips, {
+          translateY: () => [0, -6 - Math.random() * 8],
+          duration: () => 2200 + Math.random() * 1600,
+          delay: stagger(90),
+          ease: "inOutSine",
+          loop: true,
+          alternate: true,
+        })
+      : null;
+
+    return () => {
+      chipAnim?.pause?.();
+      ctx.revert();
+    };
+  }, [snippets]);
 
   return null;
 }
