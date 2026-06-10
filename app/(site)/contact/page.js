@@ -1,5 +1,5 @@
-import ContactForm from "../../components/ContactForm";
-import Faq from "../../components/Faq";
+import ContactForm from "@/components/ContactForm";
+import Faq from "@/components/Faq";
 
 export const metadata = {
   title: "Contact SoftiIntel — Start Your Project",

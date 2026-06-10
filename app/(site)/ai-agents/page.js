@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { AGENTS_SHOWCASE, SERVICES } from "../../lib/data";
-import Faq from "../../components/Faq";
-import MagneticButton from "../../components/MagneticButton";
-import AgentsFX from "../../components/fx/AgentsFX";
+import { AGENTS_SHOWCASE, SERVICES } from "@/lib/data";
+import Faq from "@/components/Faq";
+import MagneticButton from "@/components/MagneticButton";
+import AgentsFX from "@/components/fx/AgentsFX";
 
 export const metadata = {
   title: "AI Agents — Autonomous Digital Workers for Your Business",

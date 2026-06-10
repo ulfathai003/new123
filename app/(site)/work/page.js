@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { WORK } from "../../lib/data";
-import MagneticButton from "../../components/MagneticButton";
-import WorkFX from "../../components/fx/WorkFX";
+import { WORK } from "@/lib/data";
+import MagneticButton from "@/components/MagneticButton";
+import WorkFX from "@/components/fx/WorkFX";
 
 export const metadata = {
   title: "Work — Case Studies in Applied Intelligence",

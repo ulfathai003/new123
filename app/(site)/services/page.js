@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SERVICES } from "../../lib/data";
+import { SERVICES } from "@/lib/data";
 
 export const metadata = {
   title: "Services — AI Agents, CRM, Web, Mobile, Automation & More",

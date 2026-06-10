@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SERVICES, SITE } from "../../../lib/data";
-import Faq from "../../../components/Faq";
-import MagneticButton from "../../../components/MagneticButton";
-import ServiceFX from "../../../components/fx/ServiceFX";
+import { SERVICES, SITE } from "@/lib/data";
+import Faq from "@/components/Faq";
+import MagneticButton from "@/components/MagneticButton";
+import ServiceFX from "@/components/fx/ServiceFX";
 
 export function generateStaticParams() {
   return SERVICES.map((s) => ({ slug: s.slug }));

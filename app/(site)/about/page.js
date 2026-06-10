@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Faq from "../../components/Faq";
-import MagneticButton from "../../components/MagneticButton";
-import AboutFX from "../../components/fx/AboutFX";
+import Faq from "@/components/Faq";
+import MagneticButton from "@/components/MagneticButton";
+import AboutFX from "@/components/fx/AboutFX";
 
 export const metadata = {
   title: "About SoftiIntel — The Story of an AI-Native Agency",

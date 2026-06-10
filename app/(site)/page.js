@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { SERVICES, HOME_FAQS, AGENTS_SHOWCASE } from "../lib/data";
-import HomeFX from "../components/fx/HomeFX";
-import MagneticButton from "../components/MagneticButton";
-import Faq from "../components/Faq";
+import { SERVICES, HOME_FAQS, AGENTS_SHOWCASE } from "@/lib/data";
+import HomeFX from "@/components/fx/HomeFX";
+import MagneticButton from "@/components/MagneticButton";
+import Faq from "@/components/Faq";
 
 export const metadata = {
   title: "SoftiIntel — AI-Native Creative Technology Agency | AI Agents, CRM, Web & Automation",
