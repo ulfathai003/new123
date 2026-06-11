@@ -28,6 +28,16 @@ export default function Contact() {
             The bottleneck, the missed follow-ups, the spreadsheet that runs
             your business — tell us. Watch the signal strengthen as you type.
           </p>
+          <p className="mt-5 reveal">
+            <a
+              href="https://www.linkedin.com/company/110878416"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="draw-link mono-label !text-signal"
+            >
+              or connect on LinkedIn ↗
+            </a>
+          </p>
         </div>
       </section>
 

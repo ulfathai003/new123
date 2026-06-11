@@ -94,6 +94,7 @@ export default function Footer() {
         <div>
           <p className="mono-label !text-signal mb-5">signal</p>
           <a href={`mailto:${SITE.email}`} className="draw-link block w-fit text-sm font-light text-snow/70 hover:text-snow mb-3">{SITE.email}</a>
+          <a href={SITE.linkedin} target="_blank" rel="noopener noreferrer" className="draw-link block w-fit text-sm font-light text-snow/70 hover:text-snow mb-3">LinkedIn ↗</a>
           <p className="mono-label !text-snow/40 mt-6">local time</p>
           <p className="text-sm font-light text-snow/70 tabular-nums">{time || "—"}</p>
         </div>

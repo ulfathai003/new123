@@ -16,6 +16,7 @@ const orgSchema = {
   url: SITE.url,
   email: SITE.email,
   description: SITE.description,
+  sameAs: [SITE.linkedin],
   makesOffer: SERVICES.map((s) => ({
     "@type": "Offer",
     itemOffered: {
