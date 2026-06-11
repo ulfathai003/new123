@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { SERVICES, HOME_FAQS } from "../../lib/data";
-import HomeFX from "../../components/fx/HomeFX";
-import MagneticButton from "../../components/MagneticButton";
-import Faq from "../../components/Faq";
+import { SERVICES, HOME_FAQS } from "../lib/data";
+import HomeFX from "../components/fx/HomeFX";
+import MagneticButton from "../components/MagneticButton";
+import Faq from "../components/Faq";
 
 export const metadata = {
   title: "SoftiIntel — AI-Native Creative Technology Agency | AI Agents, CRM, Web & Automation",
@@ -50,7 +50,8 @@ export default function Home() {
           </div>
         </div>
         <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 reveal">
-          <p className="mono-label">scroll — the engine warms up</p>
+          <p className="mono-label">scroll — the camera flies</p>
+          <p className="mono-label !text-snow/40 hidden md:block">hold + drag — the world turns</p>
           <div className="w-px h-9 bg-gradient-to-b from-snow/50 to-transparent" />
         </div>
       </section>

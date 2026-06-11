@@ -1,18 +1,31 @@
-import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
-import { SITE } from "../lib/data";
+import { IBM_Plex_Mono } from "next/font/google";
+import { SITE, SERVICES } from "../lib/data";
+import Shell from "../components/Shell";
 import "./globals.css";
-
-const grotesk = Space_Grotesk({
-  variable: "--font-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-});
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["300", "400", "500", "600"],
 });
+
+const orgSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE.name,
+  url: SITE.url,
+  email: SITE.email,
+  description: SITE.description,
+  makesOffer: SERVICES.map((s) => ({
+    "@type": "Offer",
+    itemOffered: {
+      "@type": "Service",
+      name: s.title,
+      description: s.short,
+      url: `${SITE.url}/services/${s.slug}`,
+    },
+  })),
+};
 
 export const metadata = {
   metadataBase: new URL(SITE.url),
@@ -45,8 +58,14 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${grotesk.variable} ${plexMono.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={plexMono.variable}>
+      <body className="grain vignette">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
+        <Shell>{children}</Shell>
+      </body>
     </html>
   );
 }

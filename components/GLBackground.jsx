@@ -123,10 +123,13 @@ function AlpsSplat() {
   useFrame((state) => {
     const g = groupRef.current;
     if (!g) return;
-    const p = scrollState.progress;
-    // the mountain slowly presents itself as the story scrolls
-    g.rotation.y = p * Math.PI * 0.55 + state.clock.elapsedTime * 0.012;
-    g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12 - p * 1.4;
+    // the camera tells the story; the massif breathes — and obeys
+    // the visitor's grip (mouse-hold orbit around its own centre)
+    const hold = pointerState.hold;
+    g.rotation.y +=
+      (state.clock.elapsedTime * 0.008 + hold.yaw - g.rotation.y) * 0.12;
+    g.rotation.x += (hold.pitch - g.rotation.x) * 0.12;
+    g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
   });
 
   if (!splat) return null;
@@ -188,6 +191,7 @@ const particleFrag = /* glsl */ `
 
 function Particles({ theme, count }) {
   const matRef = useRef();
+  const ptsRef = useRef();
 
   const seeds = useMemo(() => {
     const arr = new Float32Array(count * 4);
@@ -219,10 +223,15 @@ function Particles({ theme, count }) {
     u.uColorA.value.lerp(theme.current.a, 0.04);
     u.uColorB.value.lerp(theme.current.b, 0.04);
     u.uEnergy.value += (theme.current.energy - u.uEnergy.value) * 0.04;
+    // the swarm also yields to the visitor's grip
+    if (ptsRef.current) {
+      ptsRef.current.rotation.y += (pointerState.hold.yaw - ptsRef.current.rotation.y) * 0.12;
+      ptsRef.current.rotation.x += (pointerState.hold.pitch * 0.6 - ptsRef.current.rotation.x) * 0.12;
+    }
   });
 
   return (
-    <points frustumCulled={false}>
+    <points ref={ptsRef} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[new Float32Array(count * 3), 3]} />
         <bufferAttribute attach="attributes-aSeed" args={[seeds, 4]} />
@@ -245,6 +254,20 @@ function Particles({ theme, count }) {
    composite → screen. One orchestrator owns the render loop.
    ════════════════════════════════════════════════════════════ */
 const SIM_SIZE = 288;
+
+/* the storyboard: camera shots the scroll flies between (igloo-style).
+   Each shot is [position, lookAt] in world units around the massif. */
+const SHOTS = [
+  [[0, 1.5, 16], [0, 1.0, -6]],   // 0 · arrival — frontal, eye level
+  [[7, 4.5, 12], [-1, 0.5, -5]],  // 1 · starboard climb — high right
+  [[-8, 2.0, 10], [1, 1.5, -4]],  // 2 · port traverse — low left
+  [[4, 8.0, 9],  [0, -1.5, -5]],  // 3 · aerial — looking down the ridges
+  [[-3, 0.6, 7.5], [1, 2.5, -4]], // 4 · valley floor — peaks loom overhead
+  [[0, 5.5, 18], [0, 0.5, -6]],   // 5 · departure — wide farewell
+];
+const vA = new THREE.Vector3();
+const vB = new THREE.Vector3();
+const lookTarget = new THREE.Vector3(0, 1, -6);
 
 function Pipeline({ theme, mode, count }) {
   const { gl, camera, size } = useThree();
@@ -294,16 +317,35 @@ function Pipeline({ theme, mode, count }) {
   }, []);
 
   useFrame(() => {
-    // gentle depth parallax — the camera leans with the cursor,
-    // sliding the 3D content against the page like a diorama
-    const px = (pointerState.x - 0.5) * 1.6;
-    const py = (pointerState.y - 0.5) * 1.0;
-    camera.position.x += (px - camera.position.x) * 0.04;
-    camera.position.y += (py - camera.position.y) * 0.04;
-    // home dollies toward the peaks as the journey progresses
-    const targetZ = mode === "splat" ? 16 - scrollState.progress * 5 : 16;
-    camera.position.z += (targetZ - camera.position.z) * 0.04;
-    camera.lookAt(0, 0, -6);
+    // ── cinematic flythrough: scroll interpolates between storyboard
+    // shots; the cursor adds a small parallax lean on top ──
+    if (mode === "splat") {
+      const t = scrollState.progress * (SHOTS.length - 1);
+      const i = Math.min(Math.floor(t), SHOTS.length - 2);
+      const f = t - i;
+      const e = f * f * (3 - 2 * f); // smoothstep between shots
+      vA.fromArray(SHOTS[i][0]).lerp(vB.fromArray(SHOTS[i + 1][0]), e);
+      vA.x += (pointerState.x - 0.5) * 1.4;
+      vA.y += (pointerState.y - 0.5) * 0.9;
+      camera.position.lerp(vA, 0.05);
+      vA.fromArray(SHOTS[i][1]).lerp(vB.fromArray(SHOTS[i + 1][1]), e);
+      lookTarget.lerp(vA, 0.05);
+    } else {
+      vA.set((pointerState.x - 0.5) * 1.6, (pointerState.y - 0.5) * 1.0, 16);
+      camera.position.lerp(vA, 0.04);
+      lookTarget.lerp(vB.set(0, 0, -6), 0.04);
+    }
+    camera.lookAt(lookTarget);
+
+    // ── mouse-hold orbit: integrate inertia; content reads hold.* ──
+    const hold = pointerState.hold;
+    if (!hold.dragging) {
+      hold.yaw += hold.vYaw;
+      hold.pitch += hold.vPitch;
+      hold.vYaw *= 0.94;
+      hold.vPitch *= 0.94;
+    }
+    hold.pitch = THREE.MathUtils.clamp(hold.pitch, -0.35, 0.45);
 
     // water step — splat strength follows pointer speed, clicks slam
     const splat =
@@ -352,6 +394,56 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
     if (typeof window === "undefined") return mode;
     return mode === "splat" && window.innerWidth < 768 ? "particles" : mode;
   }, [mode]);
+
+  /* ── mouse-hold orbit: press anywhere quiet and drag to turn the
+     world; release and it coasts. Mouse only — touch keeps scrolling,
+     which already flies the camera. ── */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(pointer: coarse)").matches || reducedMotion) return;
+
+    let lastX = 0;
+    let lastY = 0;
+    const hold = pointerState.hold;
+
+    const onDown = (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest("a, button, input, textarea, select, summary, [data-magnetic], pre")) return;
+      hold.dragging = true;
+      hold.vYaw = 0;
+      hold.vPitch = 0;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      document.documentElement.classList.add("is-grabbing");
+    };
+    const onMove = (e) => {
+      if (!hold.dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      hold.yaw += dx * 0.0042;
+      hold.pitch += dy * 0.0026;
+      hold.vYaw = dx * 0.0042; // remembered for release inertia
+      hold.vPitch = dy * 0.0026;
+    };
+    const onUp = () => {
+      hold.dragging = false;
+      document.documentElement.classList.remove("is-grabbing");
+    };
+
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      onUp();
+    };
+  }, [reducedMotion]);
 
   if (reducedMotion) {
     return (

@@ -84,52 +84,104 @@ export default function Shell({ children }) {
     window.scrollTo(0, 0);
 
     const ctx = gsap.context(() => {
-      // arrival curtain
+      // ── arrival curtain — igloo-style diagonal wipe ──
       gsap.fromTo(
         curtainRef.current,
         { scaleY: 1 },
-        { scaleY: 0, transformOrigin: "top center", duration: 0.9, ease: "power4.inOut", delay: 0.05 }
+        {
+          scaleY: 0,
+          transformOrigin: "top center",
+          duration: 1.1,
+          ease: "power4.inOut",
+          delay: 0.05,
+        }
       );
 
-      // headline grammar — GSAP SplitText with masked lines
+      // ── nav links — stagger in after curtain ──
+      gsap.fromTo(
+        "header a, header button, header nav > *",
+        { opacity: 0, y: -12 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.06,
+          ease: "power3.out",
+          delay: 0.4,
+        }
+      );
+
+      // ── headline grammar — igloo.inc straight masked reveal ──
+      // and optional scramble logic for characters
       document.querySelectorAll("[data-split]").forEach((el) => {
         const split = new SplitText(el, { type: "words,chars", mask: "words" });
         gsap.set(el, { opacity: 1 });
+        
         gsap.from(split.chars, {
-          yPercent: 115,
-          duration: 0.9,
-          stagger: 0.014,
+          yPercent: 110,
+          opacity: 0,
+          duration: 1,
+          stagger: {
+            amount: el.textContent.length * 0.02,
+            from: "start"
+          },
           ease: "expo.out",
-          scrollTrigger: { trigger: el, start: "top 88%", once: true },
+          scrollTrigger: { trigger: el, start: "top 90%", once: true },
+          onStart: () => {
+             // Scramble effect: characters cycle random symbols before resolving
+             split.chars.forEach((char, i) => {
+               const original = char.textContent;
+               const symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+               const obj = { val: 0 };
+               gsap.to(obj, {
+                 val: 1,
+                 duration: 0.8,
+                 delay: i * 0.02,
+                 ease: "none",
+                 onUpdate: () => {
+                   if (obj.val < 0.8) {
+                     char.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                   } else {
+                     char.textContent = original;
+                   }
+                 }
+               });
+             });
+          }
         });
       });
 
-      // body grammar — rise from the fog
+      // ── body grammar — rise from fog with blur dissolve ──
       gsap.utils.toArray(".reveal").forEach((el) => {
-        gsap.to(el, {
-          opacity: 1,
-          y: 0,
-          duration: 1.1,
-          ease: "power4.out",
-          scrollTrigger: { trigger: el, start: "top 85%", once: true },
-        });
+        gsap.fromTo(
+          el,
+          { opacity: 0, y: 40, filter: "blur(6px)" },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 1.3,
+            ease: "power4.out",
+            scrollTrigger: { trigger: el, start: "top 88%", once: true },
+          }
+        );
       });
 
-      // animated statistics — [data-count="120"]
+      // ── animated statistics — slower dramatic count ──
       gsap.utils.toArray("[data-count]").forEach((el) => {
         const target = parseFloat(el.dataset.count);
         const obj = { v: 0 };
         gsap.to(obj, {
           v: target,
-          duration: 1.8,
-          ease: "power3.out",
+          duration: 2.4,
+          ease: "power2.out",
           scrollTrigger: { trigger: el, start: "top 85%", once: true },
-          onUpdate: () => (el.textContent = Math.round(obj.v) + (el.dataset.suffix || "")),
+          onUpdate: () =>
+            (el.textContent = Math.round(obj.v) + (el.dataset.suffix || "")),
         });
       });
 
-      // scroll parallax — [data-speed] layers drift at their own pace
-      // while crossing the viewport (positive = rises, negative = sinks)
+      // ── scroll parallax — [data-speed] layers drift ──
       gsap.utils.toArray("[data-speed]").forEach((el) => {
         const sp = parseFloat(el.dataset.speed) || 0.15;
         gsap.fromTo(
@@ -138,7 +190,58 @@ export default function Shell({ children }) {
           {
             y: -sp * 120,
             ease: "none",
-            scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: 0.6 },
+            scrollTrigger: {
+              trigger: el,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 0.6,
+            },
+          }
+        );
+      });
+
+      // ── staggered list rows (get-started links) ──
+      gsap.utils.toArray(".start-row").forEach((el, i) => {
+        gsap.fromTo(
+          el,
+          { opacity: 0, x: -20 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.8,
+            ease: "power3.out",
+            delay: i * 0.04,
+            scrollTrigger: { trigger: el, start: "top 92%", once: true },
+          }
+        );
+      });
+
+      // ── feature arrows — slide in from left ──
+      gsap.utils.toArray(".feature-link").forEach((el) => {
+        gsap.fromTo(
+          el,
+          { opacity: 0, x: -14 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.7,
+            ease: "power3.out",
+            scrollTrigger: { trigger: el, start: "top 90%", once: true },
+          }
+        );
+      });
+
+      // ── mono-labels — quick fade stagger ──
+      gsap.utils.toArray(".mono-label:not(header *)").forEach((el) => {
+        gsap.fromTo(
+          el,
+          { opacity: 0, y: 8 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power2.out",
+            scrollTrigger: { trigger: el, start: "top 92%", once: true },
           }
         );
       });

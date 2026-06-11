@@ -14,6 +14,56 @@ const LINKS = [
   ["Contact", "/contact"],
 ];
 
+function NavLink({ label, href, active }) {
+  const ref = useRef(null);
+  const chars = useRef([]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const text = label;
+    ref.current.innerHTML = "";
+    chars.current = text.split("").map((c) => {
+      const span = document.createElement("span");
+      span.textContent = c;
+      span.style.display = "inline-block";
+      ref.current.appendChild(span);
+      return { span, original: c };
+    });
+  }, [label]);
+
+  const onEnter = () => {
+    const symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+    chars.current.forEach((item, i) => {
+      const obj = { v: 0 };
+      gsap.to(obj, {
+        v: 1,
+        duration: 0.5,
+        delay: i * 0.02,
+        ease: "none",
+        onUpdate: () => {
+          if (obj.v < 0.7) {
+            item.span.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+          } else {
+            item.span.textContent = item.original;
+          }
+        },
+      });
+    });
+  };
+
+  return (
+    <Link
+      href={href}
+      onMouseEnter={onEnter}
+      className={`draw-link mono-label transition-colors inline-block ${
+        active ? "!text-snow" : "!text-snow/60 hover:!text-snow"
+      }`}
+    >
+      <span ref={ref} className="inline-block" />
+    </Link>
+  );
+}
+
 export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -27,11 +77,22 @@ export default function Nav() {
       gsap.timeline()
         .set(overlay, { display: "flex" })
         .fromTo(overlay, { clipPath: "circle(0% at 92% 6%)" }, {
-          clipPath: "circle(140% at 92% 6%)", duration: 0.8, ease: "power4.inOut",
+          clipPath: "circle(140% at 92% 6%)", duration: 0.9, ease: "power4.inOut",
         })
-        .fromTo(".menu-link", { yPercent: 120, opacity: 0 }, {
-          yPercent: 0, opacity: 1, stagger: 0.06, duration: 0.7, ease: "expo.out",
-        }, "-=0.3");
+        .fromTo(".menu-link", { 
+          yPercent: 120, 
+          opacity: 0, 
+          rotation: 4, 
+          scale: 0.9 
+        }, {
+          yPercent: 0, 
+          opacity: 1, 
+          rotation: 0, 
+          scale: 1, 
+          stagger: 0.08, 
+          duration: 1.1, 
+          ease: "expo.out",
+        }, "-=0.4");
     } else {
       gsap.timeline()
         .to(overlay, { clipPath: "circle(0% at 92% 6%)", duration: 0.6, ease: "power4.inOut" })
@@ -53,17 +114,7 @@ export default function Nav() {
 
         <nav className="hidden md:flex items-center gap-7" aria-label="Primary">
           {LINKS.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className={`draw-link mono-label transition-colors ${
-                pathname === href || pathname.startsWith(href + "/")
-                  ? "!text-snow"
-                  : "!text-snow/60 hover:!text-snow"
-              }`}
-            >
-              {label}
-            </Link>
+            <NavLink key={href} label={label} href={href} active={pathname === href || pathname.startsWith(href + "/")} />
           ))}
           <MagneticButton href="/contact" className="cta !py-2.5 !px-5">
             <span className="dot" />

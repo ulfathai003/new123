@@ -23,8 +23,8 @@
   --color-mist: var(--mist);
   --color-rock: var(--rock);
   --color-signal: var(--signal);
-  --color-signal2: var(--signal-2);
-  --font-sans: var(--font-grotesk);
+  --color-signal2: var(--signal2);
+  --font-sans: var(--font-plex-mono);
   --font-mono: var(--font-plex-mono);
 }
 
@@ -32,6 +32,12 @@
 html.has-cursor,
 html.has-cursor * {
   cursor: none !important;
+}
+
+/* mouse-hold orbit engaged: pause text selection so dragging stays smooth */
+html.is-grabbing,
+html.is-grabbing * {
+  user-select: none !important;
 }
 
 html {
@@ -52,7 +58,7 @@ html.lenis body {
 body {
   background: var(--void);
   color: var(--snow);
-  font-family: var(--font-grotesk), system-ui, sans-serif;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
@@ -223,28 +229,31 @@ body {
   letter-spacing: -0.03em;
   line-height: 0.98;
   text-wrap: balance;
+  transition: letter-spacing 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ─── split-text reveal (chars start hidden, anime.js reveals) ─── */
+/* ─── igloo.inc split-text reveal (chars masked per-word, GPU-accelerated) ─── */
 .split-ready .char {
   display: inline-block;
   transform: translateY(110%);
   opacity: 0;
   will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 .split-ready .word {
   display: inline-block;
   overflow: clip;
   vertical-align: bottom;
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
 }
 
-/* ─── fade-up reveal targets (gsap) ─── */
+/* ─── igloo.inc fade-up reveal (blur dissolve) ─── */
 .reveal {
   opacity: 0;
-  transform: translateY(32px);
-  will-change: transform, opacity;
+  transform: translateY(40px);
+  filter: blur(6px);
+  will-change: transform, opacity, filter;
 }
 
 /* ─── film grain + vignette, pure CSS, zero JS cost ─── */
@@ -279,7 +288,7 @@ body {
   );
 }
 
-/* ─── underline link (draws on hover) ─── */
+/* ─── underline link (draws on hover, igloo-style) ─── */
 .draw-link {
   position: relative;
 }
@@ -293,11 +302,41 @@ body {
   background: currentColor;
   transform: scaleX(0);
   transform-origin: right;
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .draw-link:hover::after {
   transform: scaleX(1);
   transform-origin: left;
+}
+
+/* ─── igloo.inc hover micro-animations ─── */
+.feature-link {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.feature-link:hover {
+  transform: translateX(4px);
+}
+
+.start-row {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.3s ease;
+}
+.start-row:hover {
+  transform: translateX(6px);
+  background: color-mix(in srgb, var(--signal) 4%, transparent);
+}
+
+/* menu links — igloo stagger-revealed */
+.menu-link {
+  transition: letter-spacing 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.menu-link:hover {
+  letter-spacing: 0.04em;
+}
+
+/* act-index ghost numbers — slow drift */
+.act-index {
+  transition: opacity 0.6s ease;
 }
 
 /* ─── signal CTA button ─── */
@@ -358,119 +397,7 @@ body {
   will-change: transform;
 }
 
-/* ───────────────────────────────────────────────
-   JETRO EDUCATION CRM — admin surface
-   Reuses brand tokens; no WebGL/cursor/grain here.
-   ─────────────────────────────────────────────── */
-.crm-root {
-  /* inherits the site's light "warm paper + electric indigo" tokens (:root);
-     only adds app-surface shades layered on top of the paper base */
-  --surface: #ffffff;      /* cards, sidebar, popovers */
-  --surface-2: #faf8f3;    /* card gradient top, subtle fills */
-  --surface-3: #efece4;    /* inputs, buttons, hover rails */
-  --tint: color-mix(in srgb, var(--signal) 6%, transparent);
-  min-height: 100vh;
-  background:
-    radial-gradient(1200px 600px at 12% -10%, color-mix(in srgb, var(--signal) 8%, transparent), transparent 60%),
-    radial-gradient(1000px 500px at 100% 0%, color-mix(in srgb, var(--signal-2) 9%, transparent), transparent 55%),
-    var(--void);
-  color: var(--snow);
-  font-family: var(--font-grotesk), system-ui, sans-serif;
-  cursor: auto;
-}
-.crm-root *::selection { background: var(--signal); color: #fff; }
 
-.crm-card {
-  background: linear-gradient(180deg, var(--surface-2), var(--surface));
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(20, 21, 26, 0.04), 0 12px 32px -20px rgba(20, 21, 26, 0.22);
-}
-
-.crm-label {
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--mist);
-}
-
-.crm-input {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 11px 14px;
-  font-size: 0.9rem;
-  color: var(--snow);
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.crm-input::placeholder { color: color-mix(in srgb, var(--snow) 38%, transparent); }
-.crm-input:focus {
-  border-color: var(--signal);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 16%, transparent);
-}
-select.crm-input { appearance: none; cursor: pointer; }
-
-.crm-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 16px; border-radius: 10px;
-  font-size: 0.85rem; font-weight: 500; white-space: nowrap;
-  border: 1px solid var(--line); color: var(--snow); background: var(--surface);
-  cursor: pointer; transition: background 0.2s, border-color 0.2s, opacity 0.2s, transform 0.1s;
-}
-.crm-btn:hover { background: var(--surface-3); border-color: color-mix(in srgb, var(--snow) 22%, transparent); }
-.crm-btn:active { transform: translateY(1px); }
-.crm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.crm-btn-primary {
-  background: linear-gradient(120deg, var(--signal), var(--signal-2));
-  color: #fff; border-color: transparent; font-weight: 600;
-  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--signal) 70%, transparent);
-}
-.crm-btn-primary:hover { filter: brightness(1.05); border-color: transparent; background: linear-gradient(120deg, var(--signal), var(--signal-2)); }
-.crm-btn-danger { color: #be123c; background: var(--surface); border-color: color-mix(in srgb, #be123c 30%, transparent); }
-.crm-btn-danger:hover { background: color-mix(in srgb, #be123c 8%, transparent); border-color: color-mix(in srgb, #be123c 45%, transparent); }
-.crm-btn-ghost { background: transparent; border-color: transparent; }
-.crm-btn-ghost:hover { background: var(--surface-3); border-color: var(--line); }
-
-.crm-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px; border-radius: 999px;
-  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em;
-  border: 1px solid transparent; white-space: nowrap;
-}
-.tone-emerald { background: rgba(16,185,129,0.12);  color: #047857; border-color: rgba(16,185,129,0.30); }
-.tone-amber   { background: rgba(217,119,6,0.13);   color: #b45309; border-color: rgba(217,119,6,0.30); }
-.tone-rose    { background: rgba(244,63,94,0.11);   color: #be123c; border-color: rgba(244,63,94,0.28); }
-.tone-sky     { background: rgba(2,132,199,0.11);   color: #0369a1; border-color: rgba(2,132,199,0.28); }
-.tone-violet  { background: color-mix(in srgb, var(--signal) 12%, transparent); color: #4632c4; border-color: color-mix(in srgb, var(--signal) 30%, transparent); }
-.tone-rock    { background: rgba(20,21,26,0.05);    color: #5a5e68; border-color: rgba(20,21,26,0.14); }
-
-.crm-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.crm-table thead th {
-  text-align: left; padding: 12px 14px; white-space: nowrap;
-  font-family: var(--font-plex-mono), monospace; font-size: 0.66rem;
-  letter-spacing: 0.14em; text-transform: uppercase; color: var(--mist);
-  border-bottom: 1px solid var(--line);
-}
-.crm-table tbody td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-.crm-table tbody tr { transition: background 0.15s; }
-.crm-table tbody tr:hover { background: var(--tint); }
-
-.crm-nav-link {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; border-radius: 10px;
-  color: var(--mist);
-  font-size: 0.9rem; transition: background 0.18s, color 0.18s;
-}
-.crm-nav-link:hover { background: var(--surface-3); color: var(--snow); }
-.crm-nav-link[data-active="true"] {
-  background: var(--tint);
-  color: var(--signal);
-  font-weight: 500;
-  box-shadow: inset 2px 0 0 var(--signal);
-}
 
 /* reduced-motion handled by the global block below */
 
