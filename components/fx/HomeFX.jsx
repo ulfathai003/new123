@@ -8,15 +8,14 @@ import { animate, stagger } from "animejs";
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Home choreography, anime.js-homepage style:
- * - chapter tracking swaps the floating ops-console card
- * - a scroll rail cursor rides the page progress
- * - toolbox chips float on their own gentle loops
- * - the leverage chart bars grow when the chapter arrives
+ * Home choreography — card-free, igloo-style:
+ * - a quiet chapter beacon names the act you're in
+ * - leverage lines draw themselves when the chapter arrives
+ * - toolbox words float on their own slow loops
  * (Headline splits, reveals, counters and parallax come from the
  *  Shell's shared grammar — this file only adds the home-specific acts.)
  */
-export default function HomeFX({ snippets = [] }) {
+export default function HomeFX() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       gsap.set(".lev-bar", { width: (i, el) => el.dataset.size + "%" });
@@ -24,76 +23,54 @@ export default function HomeFX({ snippets = [] }) {
     }
 
     const ctx = gsap.context(() => {
-      /* ── floating ops console: one card per chapter ── */
-      let activeCard = null;
-      const showCard = (slug) => {
-        if (activeCard === slug) return;
-        activeCard = slug;
-        document.querySelectorAll(".ops-card").forEach((el) => {
-          const match = el.dataset.card === slug;
-          if (match && el.classList.contains("hidden")) {
-            el.classList.remove("hidden");
-            animate(el, {
-              translateY: [14, 0],
-              opacity: [0, 1],
-              duration: 450,
-              ease: "outExpo",
-            });
-          } else if (!match) {
-            el.classList.add("hidden");
-          }
+      /* ── chapter beacon: whisper the act name as it takes the stage ── */
+      const beacon = document.getElementById("chapter-beacon");
+      if (beacon) {
+        gsap.utils.toArray("[data-chapter]").forEach((sec) => {
+          ScrollTrigger.create({
+            trigger: sec,
+            start: "top 55%",
+            end: "bottom 55%",
+            onToggle: (self) => {
+              if (!self.isActive) return;
+              const label = sec.dataset.chapter;
+              if (beacon.textContent === label) return;
+              beacon.textContent = label;
+              animate(beacon, {
+                opacity: [0, 1],
+                translateY: [6, 0],
+                duration: 500,
+                ease: "outExpo",
+              });
+            },
+          });
         });
-      };
-      snippets.forEach((slug) => {
-        ScrollTrigger.create({
-          trigger: `#ch-${slug}`,
-          start: "top 55%",
-          end: "bottom 55%",
-          onToggle: (self) => {
-            if (self.isActive) showCard(slug);
-            else if (activeCard === slug) {
-              activeCard = null;
-              document
-                .querySelector(`.ops-card[data-card="${slug}"]`)
-                ?.classList.add("hidden");
-            }
-          },
-        });
-      });
+      }
 
-      /* ── scroll rail cursor ── */
+      /* ── leverage lines draw on arrival ── */
       ScrollTrigger.create({
-        trigger: document.body,
-        start: "top top",
-        end: "bottom bottom",
-        onUpdate: (self) => {
-          gsap.set("#scroll-rail-cursor", { top: `${self.progress * 100}%` });
-        },
-      });
-
-      /* ── leverage chart grows on arrival ── */
-      ScrollTrigger.create({
-        trigger: ".leverage-chart",
-        start: "top 85%",
+        trigger: "#leverage",
+        start: "top 70%",
         once: true,
         onEnter: () => {
           gsap.to(".lev-bar", {
             width: (i, el) => el.dataset.size + "%",
-            duration: 1.3,
+            duration: 1.4,
             ease: "power4.out",
-            stagger: 0.1,
+            stagger: 0.12,
           });
         },
       });
     });
 
-    /* ── toolbox chips: each drifts on its own slow loop ── */
+    /* ── toolbox words: each drifts on its own slow loop ── */
     const chips = document.querySelectorAll(".toolbox-chip");
     const chipAnim = chips.length
       ? animate(chips, {
-          translateY: () => [0, -6 - Math.random() * 8],
-          duration: () => 2200 + Math.random() * 1600,
-          delay: stagger(90),
+          translateY: () => [0, -5 - Math.random() * 9],
+          opacity: [{ to: 1 }],
+          duration: () => 2400 + Math.random() * 1800,
+          delay: stagger(80),
           ease: "inOutSine",
           loop: true,
           alternate: true,
@@ -104,7 +81,7 @@ export default function HomeFX({ snippets = [] }) {
       chipAnim?.pause?.();
       ctx.revert();
     };
-  }, [snippets]);
+  }, []);
 
   return null;
 }

@@ -161,10 +161,24 @@ body {
   transform: translateX(5px);
 }
 
-/* ─── home: floating ops console card ─── */
-.ops-card {
-  border-left: 2px solid var(--accent, var(--signal));
-  white-space: pre;
+/* ─── home: ghosted act numbers — depth without boxes ─── */
+.act-index {
+  font-size: clamp(8rem, 26vw, 24rem);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--accent, var(--signal)) 28%, transparent);
+}
+
+/* ─── home: toolbox words (chips without the chip) ─── */
+.toolbox-chip {
+  display: inline-block;
+  will-change: transform;
+}
+.toolbox-chip:nth-child(3n) {
+  color: color-mix(in srgb, var(--signal) 70%, var(--mist));
+}
+.toolbox-chip:nth-child(4n) {
+  font-size: 0.8125rem;
 }
 
 /* ─── FAQ accordions ─── */

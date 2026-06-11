@@ -66,12 +66,20 @@ const compositeShader = /* glsl */ `
              - texture2D(uWater, vUv - vec2(0.0, 0.004)).r;
     vec2 grad = vec2(hx, hy);
 
-    vec3 col = texture2D(uScene, vUv + grad * 0.55).rgb;
+    // chromatic aberration along the wave gradient — lensy, cinematic
+    vec3 col;
+    col.r = texture2D(uScene, vUv + grad * 0.62).r;
+    col.g = texture2D(uScene, vUv + grad * 0.55).g;
+    col.b = texture2D(uScene, vUv + grad * 0.46).b;
 
     float crest = pow(max(0.0, hx * 2.2 + hy * 1.2), 2.0);
     float trough = pow(max(0.0, -(hx * 2.2 + hy * 1.2)), 2.0);
     col = mix(col, uTint, clamp(trough * 1.6, 0.0, 0.4));
     col -= crest * 0.18;
+
+    // gentle photographic vignette, tuned for the paper page
+    vec2 vc = vUv - 0.5;
+    col *= 1.0 - dot(vc, vc) * 0.22;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -92,17 +100,20 @@ function AlpsSplat() {
     let live = true;
     let instance = null;
     // dynamic import: luma-web touches WebGL internals, keep it client-only
-    import("@lumaai/luma-web").then(({ LumaSplatsThree, LumaSplatsSemantics }) => {
-      if (!live) return;
-      instance = new LumaSplatsThree({
-        source: ALPS_URL,
-        particleRevealEnabled: true,
-        enableThreeShaderIntegration: true,
-      });
-      // strip the captured sky — the peaks float on the paper page
-      instance.semanticsMask = LumaSplatsSemantics.FOREGROUND;
-      setSplat(instance);
-    });
+    import("@lumaai/luma-web")
+      .then(({ LumaSplatsThree, LumaSplatsSemantics }) => {
+        if (!live) return;
+        instance = new LumaSplatsThree({
+          source: ALPS_URL,
+          particleRevealEnabled: true,
+          enableThreeShaderIntegration: true,
+        });
+        // strip the captured sky — the peaks float on the paper page
+        instance.semanticsMask = LumaSplatsSemantics.FOREGROUND;
+        setSplat(instance);
+        console.log("[gl] alps splat initialised");
+      })
+      .catch((err) => console.error("[gl] luma splat failed to load:", err));
     return () => {
       live = false;
       instance?.dispose?.();
@@ -332,8 +343,15 @@ function Pipeline({ theme, mode, count }) {
 export default function GLBackground({ theme, mode = "calm", reducedMotion = false }) {
   const count = useMemo(() => {
     if (typeof window === "undefined") return 3500;
-    return window.innerWidth < 768 ? 1500 : 3500;
+    return window.innerWidth < 768 ? 1200 : 3500;
   }, []);
+
+  // phones don't stream a multi-million-splat mountain — they get the
+  // light particle field instead, same mood at a fraction of the cost
+  const effectiveMode = useMemo(() => {
+    if (typeof window === "undefined") return mode;
+    return mode === "splat" && window.innerWidth < 768 ? "particles" : mode;
+  }, [mode]);
 
   if (reducedMotion) {
     return (
@@ -355,7 +373,7 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
         camera={{ fov: 50, near: 0.1, far: 200, position: [0, 0, 16] }}
         gl={{ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true }}
       >
-        <Pipeline theme={theme} mode={mode} count={count} />
+        <Pipeline theme={theme} mode={effectiveMode} count={count} />
       </Canvas>
     </div>
   );
