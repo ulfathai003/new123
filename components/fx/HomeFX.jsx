@@ -61,6 +61,35 @@ export default function HomeFX() {
           });
         },
       });
+
+      /* ── project timeline: the signal line climbs as you scroll,
+            each stage's dot ignites when it takes the stage ── */
+      if (document.getElementById("pm-list")) {
+        gsap.to("#pm-progress", {
+          scaleY: 1,
+          ease: "none",
+          scrollTrigger: {
+            trigger: "#pm-list",
+            start: "top 75%",
+            end: "bottom 60%",
+            scrub: 0.5,
+          },
+        });
+        gsap.utils.toArray(".pm-step").forEach((step) => {
+          ScrollTrigger.create({
+            trigger: step,
+            start: "top 72%",
+            once: true,
+            onEnter: () =>
+              gsap.to(step.querySelector(".pm-dot"), {
+                backgroundColor: "#5b46e8",
+                scale: 1.5,
+                duration: 0.5,
+                ease: "back.out(3)",
+              }),
+          });
+        });
+      }
     });
 
     /* ── toolbox words: each drifts on its own slow loop ── */

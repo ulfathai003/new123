@@ -25,6 +25,17 @@ const LEVERAGE = [
   ["Scheduling", 10, "#d4569e"],
 ];
 
+/* the agile delivery rhythm — from the day you come aboard to handover */
+const PIPELINE = [
+  ["day 0 · kickoff", "You come aboard", "A discovery call, an NDA if you want one, and access to the one workflow that's costing you the most. No proposal theatre — we start by listening."],
+  ["week 1 · discovery sprint", "We map the terrain", "A focused sprint to chart how your business actually runs and pinpoint the highest-leverage build. You get a clear, costed plan — fixed, not hourly."],
+  ["week 2 · design & roadmap", "The route is agreed", "Sitemap, design system and a sprint plan you sign off on. You see the whole climb before a line of production code is written."],
+  ["sprints · build", "Working software every Friday", "Short, roped pitches. Each week ships something you can click, test and steer — a live demo, never a six-month silence followed by a 'big reveal.'"],
+  ["hardening · qa", "We make it bulletproof", "Performance budgets, accessibility, security headers and cross-device QA — the unglamorous work that separates a demo from a product."],
+  ["launch · delivery", "Go live, fully handed over", "Deployed, analytics wired, your team trained on everything we built. Launch is a checkpoint, not a goodbye."],
+  ["after · iterate", "The next peak", "Sites and systems compound or decay. We stay on retainer for the businesses we believe in — measuring, refining, finding the next line up."],
+];
+
 export default function Home() {
   return (
     <main>
@@ -145,6 +156,44 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ════ TIMELINE — the agile delivery journey ════ */}
+      <section id="timeline" data-chapter="the journey" className="relative px-6 md:px-10 py-32 md:py-48">
+        <div className="max-w-4xl mx-auto">
+          <p className="mono-label mb-4 reveal">how a project flows</p>
+          <h2 className="display text-4xl md:text-6xl" data-split>
+            From hello to handover.
+          </h2>
+          <p className="mt-6 text-mist font-light leading-relaxed max-w-md reveal">
+            An agile rhythm with no surprises: you see working software every
+            week and steer it as it grows. Scroll the climb.
+          </p>
+
+          <ol id="pm-list" className="relative border-l border-line mt-16 md:mt-20">
+            {PIPELINE.map(([tag, title, body], i) => (
+              <li key={title} className="pm-step relative pl-9 md:pl-16 pb-14 md:pb-16 last:pb-0">
+                <span
+                  className="pm-dot absolute -left-[6px] top-1.5 w-[11px] h-[11px] rounded-full bg-rock"
+                  aria-hidden="true"
+                />
+                <div className="reveal">
+                  <p className="mono-label mb-2.5" style={{ color: i === 0 || i === PIPELINE.length - 1 ? undefined : "var(--signal)" }}>
+                    {tag}
+                  </p>
+                  <h3 className="display text-2xl md:text-4xl mb-3">{title}</h3>
+                  <p className="text-mist font-light leading-relaxed max-w-xl">{body}</p>
+                </div>
+              </li>
+            ))}
+            {/* the signal line climbs the timeline as you scroll */}
+            <span
+              id="pm-progress"
+              className="absolute left-[-1px] top-0 w-px h-full bg-signal origin-top scale-y-0"
+              aria-hidden="true"
+            />
+          </ol>
         </div>
       </section>
 
