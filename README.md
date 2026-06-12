@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# SoftiIntel
 
-## Getting Started
+The marketing site for **SoftiIntel** — an AI-native creative technology agency.
+A card-free, immersive, scroll-driven experience: a photoreal gaussian-splat
+mountain (Luma) behind full-bleed typographic "acts," with a cinematic camera
+flythrough, mouse-hold orbit, water-ripple cursor, and a paper-light design system.
 
-First, run the development server:
+Built with **Next.js 16 (App Router)**, **React 19**, **Three.js / @react-three/fiber**,
+**@lumaai/luma-web**, **GSAP + ScrollTrigger**, **anime.js**, and **Tailwind CSS v4**.
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install          # uses .npmrc (legacy-peer-deps) for luma-web
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Structure
 
-## Learn More
+- `app/` — routes (home, about, services + 8 dynamic service pages, ai-agents, work, contact) and SEO files (sitemap, robots, JSON-LD in `layout.js`).
+- `components/` — `Shell` (mounts everything), `GLBackground` (the WebGL scene: splat, camera shots, water-ripple sim), `Nav`, `Footer`, `ChatBot`, `Cursor`, `MagneticButton`, `Faq`, `ContactForm`, and per-page FX in `components/fx/`.
+- `lib/data.js` — single source of truth for all copy + SEO (services, FAQs, contact email, LinkedIn).
+- `next.config.mjs` — strict Content-Security-Policy and security headers.
 
-To learn more about Next.js, take a look at the following resources:
+## The mountain camera
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`components/GLBackground.jsx` defines a `SHOTS` storyboard — six authored
+camera angles (arrival → starboard climb → port traverse → aerial → valley
+floor → departure). Scroll interpolates the camera between them; press-and-drag
+orbits the massif with inertia. See `softiintel-mountain-angles.html` (saved to
+the Desktop) for a standalone preview of just that flythrough.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security
 
-## Deploy on Vercel
+`connect-src` is locked to the site itself plus Luma's domains, so the browser
+refuses any other outbound API/fetch/WebSocket call. See `next.config.mjs`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Connect this repo to **Vercel** (Framework preset: Next.js) and it deploys on
+every push. No environment variables required.
