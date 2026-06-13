@@ -171,28 +171,48 @@ export default function Home() {
             week and steer it as it grows. Scroll the climb.
           </p>
 
-          <ol id="pm-list" className="relative border-l border-line mt-16 md:mt-20">
-            {PIPELINE.map(([tag, title, body], i) => (
-              <li key={title} className="pm-step relative pl-9 md:pl-16 pb-14 md:pb-16 last:pb-0">
-                <span
-                  className="pm-dot absolute -left-[6px] top-1.5 w-[11px] h-[11px] rounded-full bg-rock"
-                  aria-hidden="true"
-                />
-                <div className="reveal">
-                  <p className="mono-label mb-2.5" style={{ color: i === 0 || i === PIPELINE.length - 1 ? undefined : "var(--signal)" }}>
-                    {tag}
-                  </p>
-                  <h3 className="display text-2xl md:text-4xl mb-3">{title}</h3>
-                  <p className="text-mist font-light leading-relaxed max-w-xl">{body}</p>
-                </div>
-              </li>
-            ))}
-            {/* the signal line climbs the timeline as you scroll */}
+          {/* zig-zag timeline — stages alternate sides of a central spine
+              so the eye sweeps left↔right down the climb (better attention) */}
+          <ol id="pm-list" className="relative mt-16 md:mt-24">
+            {/* the spine: left on mobile, centred on desktop */}
             <span
-              id="pm-progress"
-              className="absolute left-[-1px] top-0 w-px h-full bg-signal origin-top scale-y-0"
+              className="absolute top-0 w-px h-full bg-line left-[5px] md:left-1/2 md:-translate-x-1/2"
               aria-hidden="true"
             />
+            <span
+              id="pm-progress"
+              className="absolute top-0 w-px h-full bg-signal origin-top scale-y-0 left-[5px] md:left-1/2 md:-translate-x-1/2"
+              aria-hidden="true"
+            />
+            {PIPELINE.map(([tag, title, body], i) => {
+              const right = i % 2 === 1;
+              return (
+                <li
+                  key={title}
+                  className="pm-step relative pb-16 md:pb-24 last:pb-0 pl-9 md:pl-0 md:grid md:grid-cols-2 md:gap-16 md:items-center"
+                >
+                  <span
+                    className="pm-dot absolute top-1.5 w-[13px] h-[13px] rounded-full bg-rock z-10 left-0 md:left-1/2 -translate-x-1/2 ring-4 ring-[var(--void)]"
+                    aria-hidden="true"
+                  />
+                  <div
+                    className={`reveal ${right ? "md:col-start-2 md:text-left" : "md:col-start-1 md:text-right"}`}
+                    data-speed={right ? "0.1" : "-0.1"}
+                  >
+                    <p
+                      className="mono-label mb-2.5"
+                      style={{ color: i === 0 || i === PIPELINE.length - 1 ? undefined : "var(--signal)" }}
+                    >
+                      {tag}
+                    </p>
+                    <h3 className="display text-2xl md:text-4xl mb-3">{title}</h3>
+                    <p className={`text-mist font-light leading-relaxed ${right ? "md:ml-0" : "md:ml-auto"} max-w-md`}>
+                      {body}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         </div>
       </section>
