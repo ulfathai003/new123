@@ -90,8 +90,12 @@ const compositeShader = /* glsl */ `
    A Luma gaussian splat of the Schwyz Alps, foreground-masked
    so the peaks float on paper, scroll-orbited like igloo.inc.
    ════════════════════════════════════════════════════════════ */
-const ALPS_URL = "https://lumalabs.ai/capture/4da7cf32-865a-4515-8cb9-9dfc574c90c2";
+import { useGLTF } from "@react-three/drei";
 
+const ALPS_URL = "https://lumalabs.ai/capture/4da7cf32-865a-4515-8cb9-9dfc574c90c2";
+const MOUNTAIN_GLB = "/models/mountain.glb";
+
+/* ─── OPTION A: The Luma Gaussian Splat (Cinematic, Streamed) ─── */
 function AlpsSplat() {
   const groupRef = useRef();
   const [splat, setSplat] = useState(null);
@@ -99,7 +103,6 @@ function AlpsSplat() {
   useEffect(() => {
     let live = true;
     let instance = null;
-    // dynamic import: luma-web touches WebGL internals, keep it client-only
     import("@lumaai/luma-web")
       .then(({ LumaSplatsThree, LumaSplatsSemantics }) => {
         if (!live) return;
@@ -108,7 +111,6 @@ function AlpsSplat() {
           particleRevealEnabled: true,
           enableThreeShaderIntegration: true,
         });
-        // strip the captured sky — the peaks float on the paper page
         instance.semanticsMask = LumaSplatsSemantics.FOREGROUND;
         setSplat(instance);
         console.log("[gl] alps splat initialised");
@@ -123,11 +125,8 @@ function AlpsSplat() {
   useFrame((state) => {
     const g = groupRef.current;
     if (!g) return;
-    // the camera tells the story; the massif breathes — and obeys
-    // the visitor's grip (mouse-hold orbit around its own centre)
     const hold = pointerState.hold;
-    g.rotation.y +=
-      (state.clock.elapsedTime * 0.008 + hold.yaw - g.rotation.y) * 0.12;
+    g.rotation.y += (state.clock.elapsedTime * 0.008 + hold.yaw - g.rotation.y) * 0.12;
     g.rotation.x += (hold.pitch - g.rotation.x) * 0.12;
     g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
   });
@@ -136,6 +135,30 @@ function AlpsSplat() {
   return (
     <group ref={groupRef} position={[0, -3.2, 4]} scale={2.6}>
       <primitive object={splat} />
+    </group>
+  );
+}
+
+/* ─── OPTION B: The Self-Hosted GLB (Reliable, Local) ─── */
+function AlpsGLB() {
+  const groupRef = useRef();
+  // Falling back to a known placeholder if the user hasn't uploaded their mountain.glb yet
+  const { scene } = useGLTF(MOUNTAIN_GLB, true);
+
+  useFrame((state) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const hold = pointerState.hold;
+    g.rotation.y += (state.clock.elapsedTime * 0.008 + hold.yaw - g.rotation.y) * 0.12;
+    g.rotation.x += (hold.pitch - g.rotation.x) * 0.12;
+    g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
+  });
+
+  return (
+    <group ref={groupRef} position={[0, -3.2, 4]} scale={2.6}>
+      <primitive object={scene} />
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} intensity={1} />
     </group>
   );
 }
@@ -374,7 +397,7 @@ function Pipeline({ theme, mode, count }) {
 
   return createPortal(
     <>
-      {mode === "splat" && <AlpsSplat />}
+      {mode === "splat" && <AlpsGLB />}
       {mode === "particles" && <Particles theme={theme} count={count} />}
     </>,
     contentScene
