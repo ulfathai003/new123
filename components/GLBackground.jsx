@@ -1,14 +1,13 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { EffectComposer, Bloom, SMAA, Vignette } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import pointerState from "../lib/pointerState";
 import scrollState from "../lib/scrollState";
 
 const PAPER = "#f3f1ec";
-// warm sand used as a multiply veil to dim the splat's glaring snow into the palette
-const VEIL = "#d8d1bf";
 const ALPS_URL = "https://lumalabs.ai/capture/4da7cf32-865a-4515-8cb9-9dfc574c90c2";
 
 /* the storyboard: camera shots the scroll flies between (igloo-style).
@@ -80,10 +79,13 @@ function AlpsSplat({ onReady, onFail }) {
     const g = groupRef.current;
     if (!g) return;
     const hold = pointerState.hold;
-    // gentle, visible auto-rotation (~1 turn / 90s) plus the hold-orbit offset
-    g.rotation.y += (state.clock.elapsedTime * 0.07 + hold.yaw - g.rotation.y) * 0.12;
-    g.rotation.x += (hold.pitch - g.rotation.x) * 0.12;
-    g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
+    const t = state.clock.elapsedTime;
+    // gentle, visible auto-rotation (~1 turn / 90s) plus the hold-orbit offset,
+    // and a drei-<Float>-style living drift on the other axes
+    g.rotation.y += (t * 0.07 + hold.yaw - g.rotation.y) * 0.12;
+    g.rotation.x += (hold.pitch + Math.sin(t * 0.25) * 0.02 - g.rotation.x) * 0.12;
+    g.rotation.z = Math.sin(t * 0.2) * 0.015;
+    g.position.y = -3.2 + Math.sin(t * 0.5) * 0.18;
   });
 
   if (!splat) return null;
@@ -312,6 +314,22 @@ function Scene({ theme, mode, count }) {
 
       {/* atmosphere on inner/calm pages only — the home keeps just the mountain */}
       {mode !== "splat" && <Particles theme={theme} count={count} dim={false} />}
+
+      {/* immersive postprocessing (ported from the immersive-glb-scroller): crisp
+          SMAA, a subtle bloom on the brightest snow, and a soft vignette that
+          frames the scene and adds depth. Splat home only. */}
+      {mode === "splat" && (
+        <EffectComposer disableNormalPass>
+          <Bloom
+            intensity={0.5}
+            luminanceThreshold={0.96}
+            luminanceSmoothing={0.12}
+            mipmapBlur
+          />
+          <Vignette eskil={false} offset={0.3} darkness={0.5} />
+          <SMAA />
+        </EffectComposer>
+      )}
     </>
   );
 }
@@ -378,13 +396,11 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
       <Canvas
         dpr={[1, 1.6]}
         camera={{ fov: 50, near: 0.1, far: 200, position: [0, 1.5, 16] }}
-        // desaturate + dim the splat on the home so the bright snow/blue calms
-        // into the warm paper palette and foreground text stays readable
+        // keep the splat crisp; only a light desaturate so the blue settles into
+        // the warm paper palette (no blur — the immersive look stays sharp)
         style={{
           filter:
-            effectiveMode === "splat"
-              ? "saturate(0.5) brightness(0.9) contrast(0.97)"
-              : "none",
+            effectiveMode === "splat" ? "saturate(0.82) brightness(0.97)" : "none",
         }}
         gl={{
           antialias: true,
@@ -405,21 +421,16 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
           text stay legible. Multiply tints the glaring whites toward paper; the
           soft top/bottom gradient gives the nav and footer extra contrast. */}
       {effectiveMode === "splat" && (
-        <>
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: VEIL, mixBlendMode: "multiply", opacity: 0.45 }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(243,241,236,0.60) 0%, rgba(243,241,236,0.34) 26%, rgba(243,241,236,0.30) 64%, rgba(243,241,236,0.55) 100%)",
-              backdropFilter: "blur(2px)",
-              WebkitBackdropFilter: "blur(2px)",
-            }}
-          />
-        </>
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            // NO blur — crisp mountain. Paper only fades in at the very top
+            // (nav/hero) and bottom (footer) so those words stay legible; the
+            // middle stays clear so the Alps read sharply.
+            background:
+              "linear-gradient(180deg, rgba(243,241,236,0.55) 0%, rgba(243,241,236,0.06) 22%, rgba(243,241,236,0) 50%, rgba(243,241,236,0.10) 78%, rgba(243,241,236,0.5) 100%)",
+          }}
+        />
       )}
     </div>
   );
