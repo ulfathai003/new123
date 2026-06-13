@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // luma-web ships untranspiled ESM — let Next compile it so no
+  // environment chokes on the raw module syntax during build.
+  transpilePackages: ["@lumaai/luma-web"],
   eslint: {
     ignoreDuringBuilds: true,
   },
