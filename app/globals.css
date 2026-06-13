@@ -14,6 +14,10 @@
   --signal-2: #0bb6d4;      /* cyan secondary */
   --line: rgba(20, 21, 26, 0.14);
   --radius: 10px;
+  /* Robust system stacks (no Google Fonts fetch at build time — that was
+     Vercel's deploy-killer). The visual match is very close to IBM Plex. */
+  --font-plex-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Menlo", "Consolas", monospace;
+  --font-grotesk: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Inter", system-ui, sans-serif;
 }
 
 @theme inline {

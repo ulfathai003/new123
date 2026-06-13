@@ -1,13 +1,10 @@
-import { IBM_Plex_Mono } from "next/font/google";
 import { SITE, SERVICES } from "../lib/data";
 import Shell from "../components/Shell";
 import "./globals.css";
 
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
+/* next/font/google was the build-killer on Vercel — when Google's font
+   CDN hiccups during the build, the deploy fails with no useful error.
+   --font-plex-mono is now defined as a robust system stack in globals.css. */
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -59,7 +56,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={plexMono.variable}>
+    <html lang="en">
       <body className="grain vignette">
         <script
           type="application/ld+json"
