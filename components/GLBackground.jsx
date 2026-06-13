@@ -7,6 +7,8 @@ import pointerState from "../lib/pointerState";
 import scrollState from "../lib/scrollState";
 
 const PAPER = "#f3f1ec";
+// warm sand used as a multiply veil to dim the splat's glaring snow into the palette
+const VEIL = "#d8d1bf";
 const ALPS_URL = "https://lumalabs.ai/capture/4da7cf32-865a-4515-8cb9-9dfc574c90c2";
 
 /* the storyboard: camera shots the scroll flies between (igloo-style).
@@ -78,7 +80,8 @@ function AlpsSplat({ onReady, onFail }) {
     const g = groupRef.current;
     if (!g) return;
     const hold = pointerState.hold;
-    g.rotation.y += (state.clock.elapsedTime * 0.008 + hold.yaw - g.rotation.y) * 0.12;
+    // gentle, visible auto-rotation (~1 turn / 90s) plus the hold-orbit offset
+    g.rotation.y += (state.clock.elapsedTime * 0.07 + hold.yaw - g.rotation.y) * 0.12;
     g.rotation.x += (hold.pitch - g.rotation.x) * 0.12;
     g.position.y = -3.2 + Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
   });
@@ -295,19 +298,20 @@ function Scene({ theme, mode, count }) {
       <directionalLight position={[6, 10, 6]} intensity={1.4} color="#fff5e0" />
       <directionalLight position={[-8, 4, -2]} intensity={0.5} color="#bcc7e8" />
 
-      {/* procedural massif — visible only while splat is loading or if it fails.
-          Hides completely once the photoreal Luma Alps are ready. */}
-      {(mode === "splat" || mode === "particles") && !splatReady && (
-        <ProcMassif assertive={mode === "splat" ? splatFailed : false} />
-      )}
+      {/* procedural massif — ONLY a fallback if the Luma splat fails/times out.
+          While the splat streams in we show clean paper (no triangles), and on
+          success the photoreal Alps are the sole mountain. /ai-agents keeps its
+          faint ridge as that page has no splat. */}
+      {mode === "splat" && splatFailed && <ProcMassif assertive />}
+      {mode === "particles" && <ProcMassif />}
 
       {/* the photoreal centrepiece (the actual Luma Capture) */}
       {mode === "splat" && !splatFailed && (
         <AlpsSplat onReady={onReady} onFail={onFail} />
       )}
 
-      {/* atmosphere always on; thinned once a foreground is established */}
-      <Particles theme={theme} count={count} dim={mode === "splat" && (splatReady || splatFailed)} />
+      {/* atmosphere on inner/calm pages only — the home keeps just the mountain */}
+      {mode !== "splat" && <Particles theme={theme} count={count} dim={false} />}
     </>
   );
 }
@@ -374,6 +378,14 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
       <Canvas
         dpr={[1, 1.6]}
         camera={{ fov: 50, near: 0.1, far: 200, position: [0, 1.5, 16] }}
+        // desaturate + dim the splat on the home so the bright snow/blue calms
+        // into the warm paper palette and foreground text stays readable
+        style={{
+          filter:
+            effectiveMode === "splat"
+              ? "saturate(0.5) brightness(0.9) contrast(0.97)"
+              : "none",
+        }}
         gl={{
           antialias: true,
           powerPreference: "high-performance",
@@ -387,6 +399,28 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
       >
         <Scene theme={theme} mode={effectiveMode} count={count} />
       </Canvas>
+
+      {/* ── paper veil ── only over the splat home: mutes the bright snow and
+          blends the mountain into the warm paper palette so foreground cards and
+          text stay legible. Multiply tints the glaring whites toward paper; the
+          soft top/bottom gradient gives the nav and footer extra contrast. */}
+      {effectiveMode === "splat" && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: VEIL, mixBlendMode: "multiply", opacity: 0.45 }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(243,241,236,0.60) 0%, rgba(243,241,236,0.34) 26%, rgba(243,241,236,0.30) 64%, rgba(243,241,236,0.55) 100%)",
+              backdropFilter: "blur(2px)",
+              WebkitBackdropFilter: "blur(2px)",
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
