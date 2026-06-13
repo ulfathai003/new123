@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
 import * as THREE from "three";
+import dynamic from "next/dynamic";
 
 import scrollState from "../lib/scrollState";
 import { ROUTE_THEMES } from "../lib/data";
-import GLBackground from "./GLBackground";
 import Cursor from "./Cursor";
 import Nav from "./Nav";
 import Footer from "./Footer";
 import ChatBot from "./ChatBot";
+
+const GLBackground = dynamic(() => import("./GLBackground"), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
