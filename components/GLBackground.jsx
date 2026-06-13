@@ -12,49 +12,67 @@ const ALPS_URL = "https://lumalabs.ai/capture/4da7cf32-865a-4515-8cb9-9dfc574c90
 /* the storyboard: camera shots the scroll flies between (igloo-style).
    each shot is [position, lookAt] in world units around the massif. */
 const SHOTS = [
-  [[0, 1.5, 16], [0, 1.0, -6]],   // 0 · arrival — frontal, eye level
-  [[7, 4.5, 12], [-1, 0.5, -5]],  // 1 · starboard climb — high right
-  [[-8, 2.0, 10], [1, 1.5, -4]],  // 2 · port traverse — low left
-  [[4, 8.0, 9], [0, -1.5, -5]],   // 3 · aerial — looking down the ridges
-  [[-3, 0.6, 7.5], [1, 2.5, -4]], // 4 · valley floor — peaks loom overhead
-  [[0, 5.5, 18], [0, 0.5, -6]],   // 5 · departure — wide farewell
+  [[0, 1.5, 16], [0, 1.0, -6]],   // 0 · arrival
+  [[7, 4.5, 12], [-1, 0.5, -5]],  // 1 · starboard climb
+  [[-8, 2.0, 10], [1, 1.5, -4]],  // 2 · port traverse
+  [[4, 8.0, 9], [0, -1.5, -5]],   // 3 · aerial
+  [[-3, 0.6, 7.5], [1, 2.5, -4]], // 4 · valley floor
+  [[0, 5.5, 18], [0, 0.5, -6]],   // 5 · departure
 ];
 const vA = new THREE.Vector3();
 const vB = new THREE.Vector3();
 const lookTarget = new THREE.Vector3(0, 1, -6);
 
 /* ════════════════════════════════════════════════════════════
-   ALPS SPLAT — the photoreal centrepiece, rendered DIRECTLY to
-   the canvas (Luma's own render hooks need the default loop; a
-   manual FBO pipeline was what made it render black). Obeys the
-   visitor's mouse-hold grip via pointerState.hold.
+   ALPS SPLAT — rendered DIRECTLY (no FBO, no fog, no shader
+   integration) so Luma's internal sort/draw cannot be broken
+   by host-side compositing. If Luma can run at all, it renders.
    ════════════════════════════════════════════════════════════ */
-function AlpsSplat({ onReady }) {
+function AlpsSplat({ onReady, onFail }) {
   const groupRef = useRef();
   const [splat, setSplat] = useState(null);
 
   useEffect(() => {
     let live = true;
     let instance = null;
+    const failTimer = setTimeout(() => {
+      if (live && !instance) {
+        console.warn("[gl] luma splat load timeout (>20s)");
+        onFail?.();
+      }
+    }, 20000);
+
     import("@lumaai/luma-web")
       .then(({ LumaSplatsThree, LumaSplatsSemantics }) => {
         if (!live) return;
+        console.log("[gl] luma library loaded, requesting capture");
         instance = new LumaSplatsThree({
           source: ALPS_URL,
           particleRevealEnabled: true,
-          // keep three integration so scene fog blends the peaks into paper
-          enableThreeShaderIntegration: true,
+          // raw render — skip three's shader pipeline so fog/tone-mapping
+          // cannot wash the peaks into paper. Faster too.
+          enableThreeShaderIntegration: false,
         });
         instance.semanticsMask = LumaSplatsSemantics.FOREGROUND;
-        instance.onLoad = () => onReady?.();
+        instance.onLoad = () => {
+          console.log("[gl] luma splat loaded ✓");
+          clearTimeout(failTimer);
+          onReady?.();
+        };
         setSplat(instance);
       })
-      .catch((err) => console.error("[gl] luma splat failed to load:", err));
+      .catch((err) => {
+        console.error("[gl] luma library import failed:", err);
+        clearTimeout(failTimer);
+        onFail?.();
+      });
+
     return () => {
       live = false;
+      clearTimeout(failTimer);
       instance?.dispose?.();
     };
-  }, [onReady]);
+  }, [onReady, onFail]);
 
   useFrame((state) => {
     const g = groupRef.current;
@@ -74,9 +92,61 @@ function AlpsSplat({ onReady }) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   PARTICLE ATMOSPHERE — always present. It is the moving backdrop
-   on inner pages AND the guaranteed fallback if the splat is slow
-   or unavailable, so the scene is never a blank page.
+   FALLBACK MASSIF — a procedural ridge built from instanced
+   triangular prisms. Always rendered behind the splat at low
+   opacity (so the scene is never blank during streaming) and
+   becomes the headline if the splat fails or times out.
+   ════════════════════════════════════════════════════════════ */
+function ProcMassif({ assertive = false }) {
+  const groupRef = useRef();
+  const peaks = useMemo(() => {
+    // a small range of jagged peaks; deterministic so it doesn't reroll
+    const rand = (seed) => Math.abs(Math.sin(seed * 999.137) * 43758.5453) % 1;
+    return Array.from({ length: 11 }, (_, i) => {
+      const x = (i - 5) * 1.7 + (rand(i) - 0.5) * 0.6;
+      const z = -6 - rand(i + 99) * 4;
+      const h = 1.6 + rand(i + 7) * 2.8;
+      const w = 1.0 + rand(i + 13) * 0.7;
+      return { pos: [x, h * 0.5 - 1.5, z], scale: [w, h, w], tilt: (rand(i + 23) - 0.5) * 0.3 };
+    });
+  }, []);
+
+  useFrame((state) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const hold = pointerState.hold;
+    g.rotation.y += (state.clock.elapsedTime * 0.005 + hold.yaw - g.rotation.y) * 0.12;
+    g.rotation.x += (hold.pitch * 0.7 - g.rotation.x) * 0.12;
+  });
+
+  return (
+    <group ref={groupRef}>
+      {peaks.map((p, i) => (
+        <mesh key={i} position={p.pos} scale={p.scale} rotation={[0, p.tilt, 0]}>
+          <coneGeometry args={[1, 1, 5]} />
+          <meshStandardMaterial
+            color={i % 2 ? "#d6d2c8" : "#bcb6a9"}
+            roughness={0.85}
+            metalness={0.0}
+            flatShading
+            transparent
+            opacity={assertive ? 1.0 : 0.32}
+          />
+        </mesh>
+      ))}
+      {/* ground plane that catches faint shadows */}
+      <mesh position={[0, -1.5, -4]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[60, 30]} />
+        <meshStandardMaterial color="#e8e4d8" roughness={1} transparent opacity={assertive ? 0.65 : 0.2} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   PARTICLE ATMOSPHERE — the moving backdrop on inner pages
+   and the secondary fallback if everything else fails. Always
+   present so the scene is never visually empty.
    ════════════════════════════════════════════════════════════ */
 const particleVert = /* glsl */ `
   uniform float uTime;
@@ -109,7 +179,7 @@ const particleFrag = /* glsl */ `
     float d = length(gl_PointCoord - 0.5);
     float core = smoothstep(0.5, 0.04, d);
     vec3 col = mix(uColorA, uColorB, vMix);
-    col = mix(col, col * 0.35, 0.55);     // ink-bodied so they read on paper
+    col = mix(col, col * 0.35, 0.55);
     gl_FragColor = vec4(col, core * (0.3 + vMix * 0.3) * vFade);
   }
 `;
@@ -199,7 +269,6 @@ function CameraRig({ mode }) {
     }
     camera.lookAt(lookTarget);
 
-    // mouse-hold orbit inertia (scene objects rotate by hold.*)
     const hold = pointerState.hold;
     if (!hold.dragging) {
       hold.yaw += hold.vYaw;
@@ -214,13 +283,32 @@ function CameraRig({ mode }) {
 
 function Scene({ theme, mode, count }) {
   const [splatReady, setSplatReady] = useState(false);
+  const [splatFailed, setSplatFailed] = useState(false);
   const onReady = useMemo(() => () => setSplatReady(true), []);
+  const onFail = useMemo(() => () => setSplatFailed(true), []);
+
   return (
     <>
       <CameraRig mode={mode} />
-      {mode === "splat" && <AlpsSplat onReady={onReady} />}
-      {/* atmosphere always on; thinned once the splat has arrived */}
-      <Particles theme={theme} count={count} dim={mode === "splat" && splatReady} />
+      {/* lighting for the procedural massif */}
+      <hemisphereLight args={["#ffffff", "#cdc6b3", 0.85]} />
+      <directionalLight position={[6, 10, 6]} intensity={1.4} color="#fff5e0" />
+      <directionalLight position={[-8, 4, -2]} intensity={0.5} color="#bcc7e8" />
+
+      {/* procedural massif — always rendered, faint while splat is loading,
+          full opacity if the splat never arrives. Even mobile (no splat) shows
+          this so the scene is never blank. */}
+      {(mode === "splat" || mode === "particles") && (
+        <ProcMassif assertive={mode === "splat" ? splatFailed : false} />
+      )}
+
+      {/* the photoreal centrepiece (skipped on mobile-mode "particles") */}
+      {mode === "splat" && !splatFailed && (
+        <AlpsSplat onReady={onReady} onFail={onFail} />
+      )}
+
+      {/* atmosphere always on; thinned once a foreground is established */}
+      <Particles theme={theme} count={count} dim={mode === "splat" && (splatReady || splatFailed)} />
     </>
   );
 }
@@ -232,14 +320,13 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
     return window.innerWidth < 768 ? 1200 : 2600;
   }, []);
 
-  // phones don't stream a multi-million-splat mountain — particle field only
   const effectiveMode = useMemo(() => {
     if (typeof window === "undefined") return mode;
+    // phones don't stream a multi-million-splat mountain — proc massif + particles
     return mode === "splat" && window.innerWidth < 768 ? "particles" : mode;
   }, [mode]);
 
-  /* mouse-hold orbit: press anywhere quiet and drag to turn the world;
-     release and it coasts. Mouse only — touch keeps scroll/camera. */
+  /* mouse-hold orbit */
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia("(pointer: coarse)").matches || reducedMotion) return;
@@ -288,11 +375,16 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
       <Canvas
         dpr={[1, 1.6]}
         camera={{ fov: 50, near: 0.1, far: 200, position: [0, 1.5, 16] }}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        gl={{
+          antialias: true,
+          powerPreference: "high-performance",
+          // Luma needs WebGL2 for gaussian splatting
+          alpha: false,
+        }}
         onCreated={({ gl, scene }) => {
           gl.setClearColor(PAPER, 1);
           scene.background = new THREE.Color(PAPER);
-          scene.fog = new THREE.FogExp2(PAPER, 0.05);
+          // NO fog — Luma renders raw, and fog was washing peaks into paper
         }}
       >
         <Scene theme={theme} mode={effectiveMode} count={count} />
