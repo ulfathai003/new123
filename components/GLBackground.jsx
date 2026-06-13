@@ -295,14 +295,13 @@ function Scene({ theme, mode, count }) {
       <directionalLight position={[6, 10, 6]} intensity={1.4} color="#fff5e0" />
       <directionalLight position={[-8, 4, -2]} intensity={0.5} color="#bcc7e8" />
 
-      {/* procedural massif — always rendered, faint while splat is loading,
-          full opacity if the splat never arrives. Even mobile (no splat) shows
-          this so the scene is never blank. */}
-      {(mode === "splat" || mode === "particles") && (
+      {/* procedural massif — visible only while splat is loading or if it fails.
+          Hides completely once the photoreal Luma Alps are ready. */}
+      {(mode === "splat" || mode === "particles") && !splatReady && (
         <ProcMassif assertive={mode === "splat" ? splatFailed : false} />
       )}
 
-      {/* the photoreal centrepiece (skipped on mobile-mode "particles") */}
+      {/* the photoreal centrepiece (the actual Luma Capture) */}
       {mode === "splat" && !splatFailed && (
         <AlpsSplat onReady={onReady} onFail={onFail} />
       )}
