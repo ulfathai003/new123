@@ -49,9 +49,9 @@ function AlpsSplat({ onReady, onFail }) {
         instance = new LumaSplatsThree({
           source: ALPS_URL,
           particleRevealEnabled: true,
-          // raw render — skip three's shader pipeline so fog/tone-mapping
-          // cannot wash the peaks into paper. Faster too.
-          enableThreeShaderIntegration: false,
+          // Re-enabling shader integration ensures it follows our CameraRig correctly.
+          // Fog is already disabled in the Canvas setup to prevent washout.
+          enableThreeShaderIntegration: true,
         });
         instance.semanticsMask = LumaSplatsSemantics.FOREGROUND;
         instance.onLoad = () => {
@@ -85,7 +85,7 @@ function AlpsSplat({ onReady, onFail }) {
 
   if (!splat) return null;
   return (
-    <group ref={groupRef} position={[0, -3.2, 4]} scale={2.6}>
+    <group ref={groupRef} position={[0, -2, 0]} scale={5.5}>
       <primitive object={splat} />
     </group>
   );
@@ -377,13 +377,12 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
         gl={{
           antialias: true,
           powerPreference: "high-performance",
-          // Luma needs WebGL2 for gaussian splatting
-          alpha: false,
+          // Luma needs WebGL2; alpha helps with compositing
+          alpha: true,
         }}
         onCreated={({ gl, scene }) => {
-          gl.setClearColor(PAPER, 1);
+          // ensure the background color is set on the scene, but alpha is true
           scene.background = new THREE.Color(PAPER);
-          // NO fog — Luma renders raw, and fog was washing peaks into paper
         }}
       >
         <Scene theme={theme} mode={effectiveMode} count={count} />
