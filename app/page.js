@@ -171,44 +171,91 @@ export default function Home() {
             week and steer it as it grows. Scroll the climb.
           </p>
 
-          {/* zig-zag timeline — stages alternate sides of a central spine
-              so the eye sweeps left↔right down the climb (better attention) */}
-          <ol id="pm-list" className="relative mt-16 md:mt-24">
-            {/* the spine: left on mobile, centred on desktop */}
+          {/* zig-zag timeline — cards alternate sides of a curving spine
+              with bold horizontal offsets so the eye sweeps left↔right
+              down the climb. Each card is a quoted accent panel. */}
+          <ol id="pm-list" className="relative mt-16 md:mt-32">
+            {/* mobile spine: straight left */}
+            <span className="absolute top-0 w-px h-full bg-line left-[7px] md:hidden" aria-hidden="true" />
             <span
-              className="absolute top-0 w-px h-full bg-line left-[5px] md:left-1/2 md:-translate-x-1/2"
+              id="pm-progress-mobile"
+              className="absolute top-0 w-[2px] h-full bg-signal origin-top scale-y-0 left-[6px] md:hidden"
               aria-hidden="true"
             />
-            <span
-              id="pm-progress"
-              className="absolute top-0 w-px h-full bg-signal origin-top scale-y-0 left-[5px] md:left-1/2 md:-translate-x-1/2"
+
+            {/* desktop curvy spine — an SVG path the GSAP progress draws */}
+            <svg
+              id="pm-spine"
+              className="absolute top-0 left-1/2 -translate-x-1/2 h-full hidden md:block pointer-events-none"
+              width="120"
+              viewBox="0 0 120 2200"
+              preserveAspectRatio="none"
               aria-hidden="true"
-            />
+            >
+              <path
+                id="pm-spine-bg"
+                d="M60,0 C20,200 100,400 60,600 C20,800 100,1000 60,1200 C20,1400 100,1600 60,1800 C20,2000 60,2100 60,2200"
+                stroke="rgba(20,21,26,0.14)"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <path
+                id="pm-spine-progress"
+                d="M60,0 C20,200 100,400 60,600 C20,800 100,1000 60,1200 C20,1400 100,1600 60,1800 C20,2000 60,2100 60,2200"
+                stroke="var(--signal)"
+                strokeWidth="2"
+                fill="none"
+                pathLength="1"
+                strokeDasharray="1"
+                strokeDashoffset="1"
+              />
+            </svg>
+
+            {/* legacy id kept for old GSAP code that scrubs the spine */}
+            <span id="pm-progress" className="hidden" aria-hidden="true" />
+
             {PIPELINE.map(([tag, title, body], i) => {
               const right = i % 2 === 1;
               return (
                 <li
                   key={title}
-                  className="pm-step relative pb-16 md:pb-24 last:pb-0 pl-9 md:pl-0 md:grid md:grid-cols-2 md:gap-16 md:items-center"
+                  className="pm-step relative pb-20 md:pb-32 last:pb-0 pl-12 md:pl-0 md:grid md:grid-cols-2 md:gap-12 md:items-center"
                 >
+                  {/* the dot — bigger, with a pulse ring */}
                   <span
-                    className="pm-dot absolute top-1.5 w-[13px] h-[13px] rounded-full bg-rock z-10 left-0 md:left-1/2 -translate-x-1/2 ring-4 ring-[var(--void)]"
+                    className="pm-dot absolute top-2 w-[16px] h-[16px] rounded-full bg-rock z-10 left-0 md:left-1/2 -translate-x-1/2 ring-[6px] ring-[var(--void)] transition-all"
                     aria-hidden="true"
                   />
+                  <span
+                    className="pm-pulse absolute top-2 w-[16px] h-[16px] rounded-full z-[9] left-0 md:left-1/2 -translate-x-1/2 opacity-0"
+                    style={{ background: "var(--signal)" }}
+                    aria-hidden="true"
+                  />
+
+                  {/* the card — alternating side, accent-bordered, offset
+                      far enough that the zig-zag is unmissable */}
                   <div
-                    className={`reveal ${right ? "md:col-start-2 md:text-left" : "md:col-start-1 md:text-right"}`}
-                    data-speed={right ? "0.1" : "-0.1"}
+                    className={`pm-card reveal relative ${
+                      right
+                        ? "md:col-start-2 md:ml-8 md:translate-x-4"
+                        : "md:col-start-1 md:mr-8 md:-translate-x-4 md:text-right"
+                    }`}
+                    data-speed={right ? "0.12" : "-0.12"}
                   >
-                    <p
-                      className="mono-label mb-2.5"
-                      style={{ color: i === 0 || i === PIPELINE.length - 1 ? undefined : "var(--signal)" }}
+                    <div
+                      className="relative bg-[var(--void-soft)] border border-line rounded-[14px] p-6 md:p-8 shadow-sm hover:shadow-lg transition-shadow"
+                      style={{ borderLeftColor: right ? undefined : "var(--signal)", borderRightColor: right ? "var(--signal)" : undefined, borderLeftWidth: right ? undefined : "3px", borderRightWidth: right ? "3px" : undefined }}
                     >
-                      {tag}
-                    </p>
-                    <h3 className="display text-2xl md:text-4xl mb-3">{title}</h3>
-                    <p className={`text-mist font-light leading-relaxed ${right ? "md:ml-0" : "md:ml-auto"} max-w-md`}>
-                      {body}
-                    </p>
+                      <p
+                        className="mono-label mb-3"
+                        style={{ color: i === 0 || i === PIPELINE.length - 1 ? "var(--mist)" : "var(--signal)" }}
+                      >
+                        <span className="inline-block w-6 text-rock mr-2">{String(i + 1).padStart(2, "0")}</span>
+                        {tag}
+                      </p>
+                      <h3 className="display text-xl md:text-3xl mb-3 leading-tight">{title}</h3>
+                      <p className="text-mist font-light leading-relaxed text-sm md:text-base">{body}</p>
+                    </div>
                   </div>
                 </li>
               );
