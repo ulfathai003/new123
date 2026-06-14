@@ -60,12 +60,17 @@ export default function Home() {
             </MagneticButton>
           </div>
         </div>
-        <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 reveal">
-          <p className="mono-label">scroll — the camera flies</p>
-          <p className="mono-label !text-snow/40 hidden md:block">hold + drag — the world turns</p>
-          <div className="w-px h-9 bg-gradient-to-b from-snow/50 to-transparent" />
-        </div>
       </section>
+
+      {/* control hint — fixed top-right, right under the Start a project button.
+          Two lines, no divider; only on the home where the splat camera lives. */}
+      <aside
+        aria-hidden="true"
+        className="fixed z-40 right-6 md:right-10 top-[78px] md:top-[84px] hidden md:flex flex-col items-end gap-1 text-right pointer-events-none"
+      >
+        <p className="mono-label !text-snow/70">scroll — the camera flies</p>
+        <p className="mono-label !text-snow/40">hold + drag — the world turns</p>
+      </aside>
 
       {/* ════ TOOLBOX — everything, one team ════ */}
       <section id="toolbox" data-chapter="toolbox" className="relative px-6 md:px-10 py-32 md:py-48 text-center overflow-clip">

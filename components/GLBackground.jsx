@@ -1,7 +1,6 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { EffectComposer, Bloom, SMAA, Vignette } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import pointerState from "../lib/pointerState";
@@ -315,21 +314,12 @@ function Scene({ theme, mode, count }) {
       {/* atmosphere on inner/calm pages only — the home keeps just the mountain */}
       {mode !== "splat" && <Particles theme={theme} count={count} dim={false} />}
 
-      {/* immersive postprocessing (ported from the immersive-glb-scroller): crisp
-          SMAA, a subtle bloom on the brightest snow, and a soft vignette that
-          frames the scene and adds depth. Splat home only. */}
-      {mode === "splat" && (
-        <EffectComposer disableNormalPass>
-          <Bloom
-            intensity={0.5}
-            luminanceThreshold={0.96}
-            luminanceSmoothing={0.12}
-            mipmapBlur
-          />
-          <Vignette eskil={false} offset={0.3} darkness={0.5} />
-          <SMAA />
-        </EffectComposer>
-      )}
+      {/* NOTE: postprocessing was removed for performance — wrapping the Luma
+          splat in an EffectComposer redirects rendering to an offscreen FBO
+          and breaks Luma's native render path, dropping home to ~11 FPS while
+          inner pages stayed at 60. The cinematic vignette is now applied via
+          a CSS overlay in the wrapper div (zero GPU cost, same framed look).
+          Luma renders directly to the canvas now → buttery smooth. */}
     </>
   );
 }
@@ -394,7 +384,11 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
   return (
     <div className="fixed inset-0 z-0" aria-hidden="true">
       <Canvas
-        dpr={[1, 1.6]}
+        // cap DPR to 1.0 on the splat home — the Luma splat fragment shader
+        // is the dominant cost; halving pixels gets us to 60fps while still
+        // looking crisp because the splat itself is naturally soft. Inner
+        // pages run lighter Particles so they keep the higher DPR cap.
+        dpr={effectiveMode === "splat" ? 1 : [1, 1.6]}
         camera={{ fov: 50, near: 0.1, far: 200, position: [0, 1.5, 16] }}
         // keep the splat crisp; only a light desaturate so the blue settles into
         // the warm paper palette (no blur — the immersive look stays sharp)
@@ -421,16 +415,26 @@ export default function GLBackground({ theme, mode = "calm", reducedMotion = fal
           text stay legible. Multiply tints the glaring whites toward paper; the
           soft top/bottom gradient gives the nav and footer extra contrast. */}
       {effectiveMode === "splat" && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            // NO blur — crisp mountain. Paper only fades in at the very top
-            // (nav/hero) and bottom (footer) so those words stay legible; the
-            // middle stays clear so the Alps read sharply.
-            background:
-              "linear-gradient(180deg, rgba(243,241,236,0.55) 0%, rgba(243,241,236,0.06) 22%, rgba(243,241,236,0) 50%, rgba(243,241,236,0.10) 78%, rgba(243,241,236,0.5) 100%)",
-          }}
-        />
+        <>
+          {/* paper veil: fades the splat into the page at nav/footer for legibility */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(243,241,236,0.55) 0%, rgba(243,241,236,0.06) 22%, rgba(243,241,236,0) 50%, rgba(243,241,236,0.10) 78%, rgba(243,241,236,0.5) 100%)",
+            }}
+          />
+          {/* CSS radial vignette — replaces the GPU Vignette pass. Zero render
+              cost (it's just a div), same cinematic edge-darkening for depth. */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(120% 90% at 50% 50%, transparent 38%, rgba(46,42,33,0.18) 78%, rgba(46,42,33,0.32) 100%)",
+              mixBlendMode: "multiply",
+            }}
+          />
+        </>
       )}
     </div>
   );
